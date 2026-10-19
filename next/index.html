@@ -174,6 +174,16 @@ textarea{width:100%;height:230px;border-radius:16px;border:1px solid var(--line)
   .coach{padding:7px 12px;font-size:calc(14px*var(--fs));margin-bottom:6px;border-radius:14px}
   .bar button{height:52px;border-radius:16px}.bar{padding-top:4px}
 }
+.card.play{touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.card img{-webkit-user-drag:none;user-select:none;pointer-events:none}
+.slot .sw[data-top]{touch-action:none;cursor:grab}
+.card.dragging{opacity:.22}
+.sw.dragging{opacity:.3}
+.drag-ghost{position:fixed!important;z-index:60;pointer-events:none;margin:0!important;transform:scale(1.07) rotate(-2deg);box-shadow:0 22px 34px -10px rgba(40,25,60,.55)!important;transition:none!important}
+.slot.over{border-color:var(--acc);background:var(--glass-b);box-shadow:0 0 0 5px color-mix(in srgb,var(--acc) 30%,transparent);transform:scale(1.03)}
+.col.over{outline:2px dashed var(--acc);outline-offset:3px;border-radius:14px}
+body.is-dragging{cursor:grabbing}
+body.is-dragging *{cursor:grabbing!important}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 35%,transparent)}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 @keyframes bump{40%{transform:scale(1.07)}}

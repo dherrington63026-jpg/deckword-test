@@ -312,7 +312,7 @@ function render() {
     html += '<div class="sh">' + (s.done ? CHECK + esc(S.lv.cats[s.cat]) : s.ids.length ? 'Group ' + s.ids.length + '/' + S.lv.per : 'Empty') + '</div>';
     s.ids.forEach(function (id, k) {
       var last = k === s.ids.length - 1 && !s.done;
-      html += '<div class="sw' + (last && sid === id ? ' sel' : '') + '">' + slotItem(id) + '</div>';
+      html += '<div class="sw' + (last && sid === id ? ' sel' : '') + '"' + (last ? ' data-top="1"' : '') + '>' + slotItem(id) + '</div>';
     });
     html += '</div>';
   });
@@ -340,6 +340,7 @@ function render() {
 }
 // a copy of the card flies into the group box
 function fly(id, si) {
+  if (S.noFly) return;
   var el = document.querySelector('#cols [data-id="' + id + '"]');
   if (!el || !el.animate) return;
   var r = el.getBoundingClientRect(), g = el.cloneNode(true);
@@ -482,7 +483,69 @@ function sfx(k) {
 }
 
 // ---------- events ----------
+// ---------- drag and drop (tap still works too) ----------
+var drag = null, noClick = 0;
+function dropTarget(x, y) {
+  var el = document.elementFromPoint(x, y); if (!el) return null;
+  var sl = el.closest('.slot'); if (sl && !sl.classList.contains('done')) return { type: 'slot', i: +sl.getAttribute('data-slot'), el: sl };
+  var co = el.closest('.col'); if (co) return { type: 'col', i: +co.getAttribute('data-col'), el: co };
+  return null;
+}
+function dragClean() {
+  if (!drag) return;
+  if (drag.ghost) drag.ghost.remove();
+  document.querySelectorAll('.dragging').forEach(function (e) { e.classList.remove('dragging'); });
+  document.querySelectorAll('.over').forEach(function (e) { e.classList.remove('over'); });
+  document.body.classList.remove('is-dragging');
+  drag = null;
+}
+document.addEventListener('pointerdown', function (e) {
+  if (!S || S.won || (e.button !== undefined && e.button > 0) || $('modal').classList.contains('on')) return;
+  var cd = e.target.closest('.card.play'), sw = !cd && e.target.closest('.slot .sw[data-top]');
+  if (!cd && !sw) return;
+  var d = { x0: e.clientX, y0: e.clientY, started: false, ghost: null };
+  if (cd) { d.from = 'col'; d.i = +cd.parentNode.getAttribute('data-col'); d.el = cd; }
+  else { var sl = sw.closest('.slot'); if (sl.classList.contains('done')) return; d.from = 'slot'; d.i = +sl.getAttribute('data-slot'); d.el = sw; }
+  var arr = d.from === 'col' ? S.cols[d.i] : S.slots[d.i].ids; if (!arr.length) return;
+  d.id = arr[arr.length - 1];
+  drag = d;
+});
+document.addEventListener('pointermove', function (e) {
+  if (!drag) return;
+  if (!drag.started) {
+    if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) < 9) return;
+    drag.started = true; unlock();
+    S.sel = null; S.hint = null;
+    var colEl = document.querySelector('.col .card'), w = drag.from === 'col' ? drag.el.getBoundingClientRect().width : (colEl ? colEl.getBoundingClientRect().width : 86);
+    var tmp = document.createElement('div'); tmp.innerHTML = cardEl(drag.id, 'play drag-ghost', w);
+    var g = tmp.firstChild; g.style.width = w + 'px'; document.body.appendChild(g);
+    drag.ghost = g; drag.w = w; drag.el.classList.add('dragging'); document.body.classList.add('is-dragging');
+    sfx('tick');
+  }
+  e.preventDefault();
+  var g2 = drag.ghost, h = g2.getBoundingClientRect().height;
+  g2.style.left = (e.clientX - drag.w / 2) + 'px'; g2.style.top = (e.clientY - h * 0.6) + 'px';
+  document.querySelectorAll('.over').forEach(function (x) { x.classList.remove('over'); });
+  var t = dropTarget(e.clientX, e.clientY);
+  if (t && !(t.type === 'col' && drag.from === 'col' && t.i === drag.i) && !(t.type === 'slot' && drag.from === 'slot' && t.i === drag.i)) t.el.classList.add('over');
+}, { passive: false });
+function dragEnd(e, cancel) {
+  if (!drag) return;
+  var d = drag, moved = d.started;
+  var t = (moved && !cancel) ? dropTarget(e.clientX, e.clientY) : null;
+  dragClean();
+  if (!moved) return;
+  noClick = Date.now();
+  if (t && !(t.type === 'col' && d.from === 'col' && t.i === d.i) && !(t.type === 'slot' && d.from === 'slot' && t.i === d.i)) {
+    S.sel = { from: d.from, i: d.i }; S.noFly = true;
+    if (t.type === 'slot') tapSlot(t.i); else tapColumn(t.i);
+    S.noFly = false;
+  } else render();
+}
+document.addEventListener('pointerup', function (e) { dragEnd(e, false); });
+document.addEventListener('pointercancel', function (e) { dragEnd(e, true); });
 document.addEventListener('click', function (e) {
+  if (Date.now() - noClick < 350) return;
   var t = e.target, b = t.closest('[data-act]');
   if (b) return act(b.getAttribute('data-act'), b);
   if (!S) return;
