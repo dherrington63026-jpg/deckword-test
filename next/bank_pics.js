@@ -1,0 +1,32 @@
+// Pictures mode: realistic photos made on this PC (see tools/make_item_pics.py). One file per id: pics/<id>.webp
+// A shared id in two lists = a "between" picture (trick card).
+window.PBANK = [
+["produce","Fruits","apple banana grapes cherry lemon peach pear strawberry watermelon pineapple kiwi orange tomato avocado"],
+["produce","Vegetables","carrot corn broccoli potato garlic pepper cucumber eggplant lettuce tomato avocado"],
+["anim-a","Farm animals","cow pig sheep horse chicken goat duck turkey"],
+["anim-a","Wild animals","lion tiger bear elephant giraffe zebra monkey panda kangaroo fox wolf"],
+["anim-c","Sea animals","whale dolphin fish octopus crab shark turtle lobster squid shrimp"],
+["anim-b","Birds","eagle owl penguin parrot flamingo swan peacock dove duck turkey"],
+["anim-b","Insects","bee butterfly ant ladybug cricket mosquito beetle fly"],
+["veh","Land vehicles","car bus truck train bicycle motorcycle tractor taxi"],
+["boat","Water vehicles","sailboat ship canoe speedboat ferry"],
+["sport","Sports balls and gear","soccer basketball football baseball tennis volleyball bowling golf hockey boxing"],
+["inst","Instruments","guitar piano violin trumpet drum saxophone"],
+["cloth","Clothes","shirt jeans dress coat socks gloves scarf bikini"],
+["shoes","Shoes","boot sandal sneaker heels"],
+["acc","Accessories","sunhat glasses handbag umbrella crown ring necklace"],
+["food-a","Sweets","cake cookie donut icecream candy lollipop chocolate cupcake pie popcorn"],
+["food-a","Fast food","pizza burger fries hotdog taco burrito sandwich pretzel bagel"],
+["food-b","Drinks","coffee tea milk soda juice bubbletea"],
+["kitchen","Kitchen items","fork spoon plate pan chopsticks bowl salt"],
+["appl","Kitchen appliances","toaster blender kettle microwave mixer fridge"],
+["furn","Furniture","chair sofa bed table lamp bookshelf clock mirror"],
+["bath","Bathroom items","soap toothbrush comb sponge towel shampoo"],
+["space","Space","moon earth saturn rocket mars telescope satellite"],
+["plants","Plants and flowers","rose tulip sunflower blossom hibiscus cactus palm evergreen leaf clover mushroom"],
+["camp","Camping gear","tent lantern compass binoculars flashlight campfire"],
+["tech","Gadgets","phone laptop camera tv radio watch headphones keyboard printer"],
+["tools","Tools","hammer wrench pickaxe toolbox bolt gear scissors ruler"],
+["school","School and office","pencil pen book notebook scissors paperclip backpack ruler clipboard envelope"],
+["hall","Halloween","pumpkin bat spider skull broom candy cauldron witchhat"]
+].map(function (r) { return { g: r[0], name: r[1], words: r[2].split(" ") }; });
