@@ -638,7 +638,7 @@ function menu() {
     '<button data-act="levels">All levels</button>' +
     '<button data-act="how">How to play</button>' +
     '<button data-act="settings">Settings</button>' +
-    '<button data-act="stats">My results (for the test)</button>' +
+    '<button data-act="stats">My stats</button>' +
     '<button data-act="remove">Remove ads: $3.99</button></div>');
 }
 function modes() {
@@ -688,12 +688,12 @@ function stats() {
   var avgM = doneAll.length ? (doneAll.reduce(function (a, e) { return a + e.misses; }, 0) / doneAll.length).toFixed(1) : '0';
   var avgS = doneAll.length ? Math.round(doneAll.reduce(function (a, e) { return a + e.secs; }, 0) / doneAll.length) : 0;
   var perMode = MORDER.map(function (m) { return MODES[m].name + ' ' + doneAll.filter(function (e) { return (e.m || 'words') === m; }).length; }).join(', ');
-  var rep = 'ALIKEBERRY TEST RESULTS\nLevels finished (incl. daily): ' + doneAll.length + '  [' + perMode + ']\nDaily decks finished: ' + doneAll.filter(function (e) { return e.daily; }).length +
+  var rep = 'ALIKEBERRY STATS\nLevels finished (incl. daily): ' + doneAll.length + '  [' + perMode + ']\nDaily decks finished: ' + doneAll.filter(function (e) { return e.daily; }).length +
     '\nDays played: ' + Object.keys(days).length + '\nAverage misses per level: ' + avgM + '\nAverage seconds per level: ' + avgS + '\nHints used: ' + cnt('hint') + '\nUndos: ' + cnt('undo') +
     '\nTapped "More hints / watch an ad": ' + cnt('adhint_tap') + '\nTapped "Remove ads $3.99": ' + cnt('removeads_tap') + '\nFun answers: ' + (fun.join(', ') || 'none') +
     '\nHighest level (Words/Colors/Pictures): ' + MORDER.map(function (m) { return Math.max.apply(null, [0].concat(Object.keys(P.sm[m]).map(Number))); }).join(' / ') +
     '\nStreak: ' + P.streak.count + '\nMode switches: ' + cnt('mode_switch');
-  modal('<h2>My results</h2><p class="sub">Nothing leaves your phone. To share, copy this and paste it to Claude.</p><textarea id="rep" readonly>' + esc(rep) + '</textarea><div class="row"><button data-act="copy">Copy</button><button data-act="menu">Back</button></div>');
+  modal('<h2>My stats</h2><p class="sub">Nothing leaves your phone. Tap Copy if you would like to share your results.</p><textarea id="rep" readonly>' + esc(rep) + '</textarea><div class="row"><button data-act="copy">Copy</button><button data-act="menu">Back</button></div>');
 }
 
 // ---------- sound ----------
@@ -809,11 +809,11 @@ function act(a, el) {
   else if (a === 'reset') { if (confirm('Erase all progress and results on this phone?')) { P = defaults(); ST = { ev: [] }; saveP(); store('dw_stats', ST); store('dw_cur', null); startLevel(1); welcome(); } }
   else if (a === 'fun') { log('fun', { v: el.getAttribute('data-v') }); el.parentNode.parentNode.innerHTML = '<p>Thank you!</p>'; }
   else if (a === 'copy') { var r = $('rep'); r.select(); try { document.execCommand('copy'); toast('Copied'); } catch (x) { } }
-  else if (a === 'remove') { log('removeads_tap'); modal('<h2>Remove ads</h2><p class="sub">This test version has no ads at all, and nothing is for sale yet. Thank you for telling us you would want this.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
+  else if (a === 'remove') { log('removeads_tap'); modal('<h2>Remove ads</h2><p class="sub">This preview has no ads at all, and nothing is for sale yet. Thank you for telling us you would want this.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
 }
 $('bUndo').onclick = function () { if (S && S.style === 'grid') gridShuffle(); else undo(); };
 $('bHint').onclick = function () {
-  if (S && S.hints <= 0) { log('adhint_tap'); S.hints += 3; toast('Test version: no real ad. Here are 3 more hints!'); render(); return; }
+  if (S && S.hints <= 0) { log('adhint_tap'); S.hints += 3; toast('Here are 3 more hints! (The full game shows a short ad here.)'); render(); return; }
   giveHint();
 };
 $('bMenu').onclick = function () { unlock(); menu(); };
