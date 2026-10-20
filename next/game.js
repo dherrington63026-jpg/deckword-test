@@ -119,7 +119,7 @@ function makeLevel(n, seed, over, mode) {
 
 // ---------- state ----------
 var S = null, hist = [];
-function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {} }; }
+function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false }; }
 var P = store('dw_prog') || defaults();
 (function migrate() { // from the first test version
   var d = defaults();
@@ -135,13 +135,15 @@ function log(e, d) { var o = { t: Date.now(), e: e, m: S ? S.mode : P.mode }; if
 
 function newState(lv, daily) {
   return { lv: lv, mode: lv.mode, daily: !!daily, cols: lv.cols.map(function (c) { return c.slice(); }),
-    slots: lv.cats.map(function () { return { cat: -1, ids: [], done: false }; }), sel: null, misses: 0, moves: 0, hints: 3, hint: null, t0: Date.now(), won: false, bye: 0 };
+    slots: lv.cats.map(function () { return { cat: -1, ids: [], done: false }; }), sel: null, misses: 0, moves: 0, hints: 3, hint: null, t0: Date.now(), won: false, bye: 0,
+    style: P.style === 'grid' ? 'grid' : 'solitaire', gsel: [], gfound: [], gorder: range(lv.cards.length), doneOrder: [] };
 }
 function snap() { return JSON.stringify({ c: S.cols, s: S.slots, m: S.moves }); }
 function pushHist() { hist.push(snap()); if (hist.length > 400) hist.shift(); }
-function persistCur() { if (!S || S.won) return; store('dw_cur', { mode: S.mode, n: S.lv.n, seed: S.lv.seed, daily: S.daily, cols: S.cols, slots: S.slots, misses: S.misses, moves: S.moves, hints: S.hints, t0: S.t0 }); }
+function persistCur() { if (!S || S.won) return; store('dw_cur', { mode: S.mode, n: S.lv.n, seed: S.lv.seed, daily: S.daily, cols: S.cols, slots: S.slots, misses: S.misses, moves: S.moves, hints: S.hints, t0: S.t0, style: S.style, gsel: S.gsel, gfound: S.gfound, gorder: S.gorder, doneOrder: S.doneOrder }); }
 
-function dailyMode() { var d = new Date(); var k = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); return MORDER[k % MORDER.length]; }
+function visibleModes() { return MORDER.filter(function (m) { return !(m === 'bible' && P.hideBible); }); }
+function dailyMode() { var d = new Date(); var k = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); var L = MORDER.filter(function (m) { return m !== 'bible'; }); return L[k % L.length]; }
 var DCFG = { cats: 4, per: 5, tricks: 1, tier: 3, gap: 1 };
 
 function startLevel(n, opts) {
@@ -163,6 +165,7 @@ function startLevel(n, opts) {
     bible: 'Bible: sort books, people, places and stories into their groups.'
   };
   if (!P.seen[mode] && TIPS[mode]) { P.seen[mode] = 1; saveP(); toast(TIPS[mode]); }
+  else if (S.style === 'grid' && !P.seen.grid) { P.seen.grid = 1; saveP(); toast('Four Groups: tap ' + S.lv.per + ' cards that belong together, then press Submit.'); }
 }
 
 // ---------- actions ----------
@@ -207,7 +210,7 @@ function tapSlot(i) {
   pushHist();
   fly(id, i);
   takeSel(); s.cat = card.cat; s.ids.push(id); S.moves++; S.sel = null; S.hint = null; S.bump = i;
-  if (s.ids.length === S.lv.per) { s.done = true; sfx('clear'); sparkle(i); toast(S.lv.cats[s.cat] + '!'); if (!P.coachDone) { P.coachDone = true; saveP(); S.bye = Date.now() + 6000; setTimeout(render, 6100); } } else sfx('ok');
+  if (s.ids.length === S.lv.per) { s.done = true; S.doneOrder.push(s.cat); sfx('clear'); sparkle(i); toast(S.lv.cats[s.cat] + '!'); if (!P.coachDone) { P.coachDone = true; saveP(); S.bye = Date.now() + 6000; setTimeout(render, 6100); } } else sfx('ok');
   persistCur(); render();
   if (S.slots.every(function (x) { return x.done; })) win();
 }
@@ -250,6 +253,13 @@ function giveHint() {
   unlock();
   if (S.won) return;
   if (S.hints <= 0) { toast('No hints left'); return; }
+  if (S.style === 'grid') {
+    var left = S.lv.cats.map(function (c, i) { return i; }).filter(function (i) { return !isFound(i); });
+    if (!left.length) return;
+    var c0 = left[Math.floor(Math.random() * left.length)];
+    var two = S.gorder.filter(function (id) { return S.lv.cards[id].cat === c0; }).slice(0, 2);
+    S.hints--; S.hint = { id: two[0], id2: two[1] }; log('hint', { n: S.lv.n }); toast('These two belong together'); render(); return;
+  }
   var r = findHint(); if (!r) return;
   S.hints--; S.hint = r.h; log('hint', { n: S.lv.n }); toast(r.msg); render();
 }
@@ -259,6 +269,7 @@ function win() {
   var secs = Math.round((Date.now() - S.t0) / 1000);
   var allowed = Math.ceil(S.lv.cards.length / 6);
   var stars = S.misses <= allowed ? 3 : S.misses <= allowed * 2 ? 2 : 1;
+  S.stars = stars;
   var sm = P.sm[S.mode], key = String(S.lv.n);
   if (!S.daily) { sm[key] = Math.max(sm[key] || 0, stars); P.curs[S.mode] = S.lv.n + 1; }
   var today = dstr();
@@ -268,7 +279,7 @@ function win() {
     P.streak.count = (P.streak.last === ystr) ? P.streak.count + 1 : 1; P.streak.last = today;
   }
   saveP(); store('dw_cur', null);
-  log('level_done', { n: S.lv.n, daily: S.daily, misses: S.misses, moves: S.moves, secs: secs, stars: stars, hints: 3 - S.hints });
+  log('level_done', { style: S.style, n: S.lv.n, daily: S.daily, misses: S.misses, moves: S.moves, secs: secs, stars: stars, hints: 3 - S.hints });
   sfx('win');
   var done = totalDone();
   setTimeout(function () { showWin(stars, secs, done); }, 600);
@@ -302,6 +313,7 @@ function slotItem(id) {
 }
 
 function coachInfo() {
+  if (S.style === 'grid') return null;
   if (P.coachDone && !(S.bye && Date.now() < S.bye)) return null;
   if (S.daily) return null;
   if (S.bye && Date.now() < S.bye) return { msg: 'Group complete! Its name is revealed. Keep going until every box is full.' };
@@ -327,9 +339,12 @@ function render() {
   var allowed = Math.ceil(S.lv.cards.length / 6), live = S.misses <= allowed ? 3 : S.misses <= allowed * 2 ? 2 : 1;
   $('stars').innerHTML = [1, 2, 3].map(function (i) { return STAR.replace('<svg', '<svg' + (i > live ? ' class="off"' : '')); }).join('');
   $('miss').textContent = S.misses + (S.misses === 1 ? ' miss' : ' misses');
-  $('dots').innerHTML = S.slots.map(function (s) { return '<i' + (s.done ? ' class="on"' : '') + '></i>'; }).join('');
+  $('dots').innerHTML = S.lv.cats.map(function (c, i) { return '<i' + (isFound(i) ? ' class="on"' : '') + '></i>'; }).join('');
+  $('stars').style.display = $('miss').style.display = P.zen ? 'none' : '';
   $('hintBadge').textContent = S.hints > 0 ? S.hints : '+3';
   $('hintLbl').textContent = S.hints > 0 ? 'Hint' : 'More hints';
+  setBar();
+  if (S.style === 'grid') { renderGrid(); persistCur(); return; }
   var cb = $('coach');
   if (co) { cb.innerHTML = esc(co.msg) + ' <a data-act="coachoff">Hide tips</a>'; cb.classList.add('on'); } else cb.classList.remove('on');
   var ns = S.slots.length, sl = $('slots'); sl.className = 'slots n' + ns;
@@ -409,6 +424,79 @@ function shake(i) { var el = document.querySelector('[data-slot="' + i + '"]'); 
 var tt = 0;
 function toast(m) { var t = $('toast'); if (!m) { t.classList.remove('on'); return; } t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(function () { t.classList.remove('on'); }, 2600); }
 
+
+// ---------- Four Groups (grid) play style ----------
+function isFound(cat) { return S.style === 'grid' ? S.gfound.indexOf(cat) >= 0 : S.slots.some(function (x) { return x.done && x.cat === cat; }); }
+var ICO = {
+  undo: '<svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg>',
+  restart: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg>',
+  shuffle: '<svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
+function setBar() {
+  var g = S.style === 'grid', u = $('bUndo'), r = $('bRestart');
+  var ukey = g ? 'shuffle' : 'undo', rkey = g ? 'submit' : 'restart';
+  if (u.getAttribute('data-k') !== ukey) { u.setAttribute('data-k', ukey); u.innerHTML = (g ? ICO.shuffle + 'Shuffle' : ICO.undo + 'Undo'); }
+  if (r.getAttribute('data-k') !== rkey) { r.setAttribute('data-k', rkey); r.innerHTML = (g ? ICO.check + 'Submit' : ICO.restart + 'Restart'); }
+  r.classList.toggle('ready', g && S.gsel.length === S.lv.per);
+}
+function gridTap(id) {
+  unlock();
+  if (S.won) return;
+  var i = S.gsel.indexOf(id);
+  if (i >= 0) S.gsel.splice(i, 1); else if (S.gsel.length < S.lv.per) S.gsel.push(id); else { toast('Deselect one first, or press Submit'); return; }
+  S.hint = null; sfx('tick'); render();
+}
+function gridShuffle() { unlock(); if (S.won) return; for (var i = S.gorder.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = S.gorder[i]; S.gorder[i] = S.gorder[j]; S.gorder[j] = t; } sfx('tick'); render(); }
+function gridSubmit() {
+  unlock();
+  if (S.won) return;
+  var per = S.lv.per;
+  if (S.gsel.length !== per) { toast('Pick ' + per + ' cards first'); return; }
+  var cats = S.gsel.map(function (id) { return S.lv.cards[id].cat; });
+  var cnt = {}; cats.forEach(function (c) { cnt[c] = (cnt[c] || 0) + 1; });
+  var best = Math.max.apply(null, Object.keys(cnt).map(function (k) { return cnt[k]; }));
+  S.moves++;
+  if (best === per) {
+    var c = cats[0]; S.gfound.push(c); S.doneOrder.push(c);
+    S.gorder = S.gorder.filter(function (id) { return S.gsel.indexOf(id) < 0; });
+    S.gsel = []; S.hint = null; sfx('clear'); toast(S.lv.cats[c] + '!'); render();
+    if (S.gfound.length === S.lv.cats.length) win();
+  } else {
+    S.misses++; sfx('miss'); log('miss', { n: S.lv.n });
+    toast(best === per - 1 ? 'So close - one card is wrong!' : 'Not a group. Try again.');
+    var g = document.querySelector('#cols .grid'); if (g && g.animate) g.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-4px)' }, { transform: 'translateX(0)' }], { duration: 320 });
+    persistCur(); render();
+  }
+}
+function renderGrid() {
+  var W = Math.min(window.innerWidth, 480) - 28, n = S.lv.cards.length, cols = n >= 16 ? 4 : 3, gap = 9, cw = (W - gap * (cols - 1)) / cols;
+  $('coach').classList.remove('on');
+  var sl = $('slots'); sl.className = 'slots bands';
+  sl.innerHTML = S.gfound.map(function (c) {
+    var pal = PAL[c % PAL.length];
+    var items = S.lv.cards.map(function (cd, id) { return cd.cat === c ? '<span>' + slotItem(id) + '</span>' : ''; }).join('');
+    return '<div class="slot done band" style="--c1:' + pal[0] + ';--c2:' + pal[1] + '"><div class="sh">' + CHECK + esc(S.lv.cats[c]) + '</div><div class="bw">' + items + '</div></div>';
+  }).join('');
+  var h = S.hint, ch = '<div class="grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
+  S.gorder.forEach(function (id) {
+    var cls = 'gcard' + (S.gsel.indexOf(id) >= 0 ? ' sel' : '') + (h && (h.id === id || h.id2 === id) ? ' hint' : '');
+    ch += cardEl(id, cls, cw);
+  });
+  $('cols').innerHTML = ch + '</div>';
+}
+function shareResult() {
+  var sq = ['🟥', '🟩', '🟨', '🟦', '🟪'];
+  var line = S.doneOrder.map(function (c) { return sq[c % 5]; }).join('');
+  var txt = 'Deckword · ' + MODES[S.mode].name + (S.daily ? ' · Daily ' + dstr() : ' · Level ' + S.lv.n) + '\n' +
+    (P.zen ? '' : '⭐'.repeat(S.stars || 1) + ' · ' + S.misses + ' miss' + (S.misses === 1 ? '' : 'es') + '\n') + line + '\n' + location.origin + location.pathname;
+  log('share');
+  if (navigator.share) { navigator.share({ text: txt }).catch(function () { }); return; }
+  var ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); toast('Copied! Paste it into a message.'); } catch (e) { toast(txt); }
+  ta.remove();
+}
+
 // ---------- modals ----------
 function modal(html) { var m = $('modal'); m.innerHTML = '<div class="sheet">' + html + '</div>'; m.classList.add('on'); }
 function closeModal() { $('modal').classList.remove('on'); $('modal').innerHTML = ''; }
@@ -423,10 +511,10 @@ function showWin(stars, secs, done) {
     P.funAsked.push(ask); saveP();
   }
   var sv = [1, 2, 3].map(function (i) { return STAR.replace('<svg', '<svg' + (i > stars ? ' class="off"' : '')); }).join('');
-  modal('<h2>' + (stars === 3 ? 'Wonderful!' : stars === 2 ? 'Well done!' : 'Solved!') + '</h2><div class="stars-big">' + sv + '</div>' +
-    '<p class="sub">' + S.misses + ' miss' + (S.misses === 1 ? '' : 'es') + ' · ' + S.moves + ' moves · ' + secs + ' sec</p><div class="chips">' + names + '</div>' + fun +
+  modal('<h2>' + (P.zen ? 'Solved!' : stars === 3 ? 'Wonderful!' : stars === 2 ? 'Well done!' : 'Solved!') + '</h2>' + (P.zen ? '' : '<div class="stars-big">' + sv + '</div>') +
+    '<p class="sub">' + (P.zen ? 'Zen mode: no score, just enjoy · ' : S.misses + ' miss' + (S.misses === 1 ? '' : 'es') + ' · ') + secs + ' sec</p><div class="chips">' + names + '</div>' + fun +
     '<div class="row"><button class="pri" data-act="' + (S.daily ? 'menu' : 'next') + '">' + (S.daily ? 'Done' : 'Next level') + '</button>' +
-    '<button data-act="replay">Play again</button></div>');
+    '<button data-act="share">Share result</button></div><div class="row"><button data-act="replay">Play again</button></div>');
 }
 var MICON = {
   nums: '<span class="mi n">123</span>',
@@ -445,6 +533,7 @@ function menu() {
     '<button class="pri" data-act="resume">Back to the game</button>' +
     '<button class="mt" data-act="modes">' + MICON[cm] + '<span><b>Game mode</b><small>Playing: ' + MODES[cm].name + ' · tap to change</small></span></button>' +
     '<button class="mt" data-act="daily"><span class="mi w" style="background:linear-gradient(145deg,#f6b73c,#ff8a4a)">' + (dailyDone ? '✓' : '★') + '</span><span><b>Daily deck: ' + MODES[dm].name + '</b><small>' + (dailyDone ? 'Done today! ' : 'New puzzle every day · ') + 'Streak ' + streak + ' day' + (streak === 1 ? '' : 's') + '</small></span></button>' +
+    '<button class="mt" data-act="style"><span class="mi w" style="background:linear-gradient(145deg,#6c7ae0,#8c9bff);font-size:18px">' + (P.style === 'grid' ? '▦' : '☰') + '</span><span><b>Play style</b><small>' + (P.style === 'grid' ? 'Four Groups grid' : 'Solitaire columns') + ' · tap to switch</small></span></button>' +
     '<button data-act="levels">All levels</button>' +
     '<button data-act="how">How to play</button>' +
     '<button data-act="settings">Settings</button>' +
@@ -453,7 +542,7 @@ function menu() {
 }
 function modes() {
   var h = '<h2>Choose a mode</h2><div class="grid1">', cm = S ? S.mode : P.mode;
-  MORDER.forEach(function (m) {
+  visibleModes().forEach(function (m) {
     var n = Object.keys(P.sm[m]).length;
     h += '<button class="mt' + (m === cm ? ' sel' : '') + '" data-act="mode" data-m="' + m + '">' + MICON[m] + '<span style="flex:1"><b>' + MODES[m].name + '</b><small>' + MODES[m].blurb + '</small><span class="bar2"><i style="width:' + Math.min(100, n) + '%"></i></span><small>' + n + ' of 100 levels done</small></span></button>';
   });
@@ -483,6 +572,9 @@ function welcome() {
 function settings() {
   modal('<h2>Settings</h2><div class="grid1"><button data-act="fs">Text size: ' + ['Medium', 'Large', 'Extra large'][[1, 1.15, 1.3].indexOf(P.fs)] + '</button>' +
     '<button data-act="snd">Sound: ' + (P.sound ? 'On' : 'Off') + '</button>' +
+    '<button data-act="hidebible">Bible mode: ' + (P.hideBible ? 'Hidden' : 'Shown') + '</button>' +
+    '<button data-act="zen">Zen mode: ' + (P.zen ? 'On (no stars or miss count)' : 'Off') + '</button>' +
+    '<button data-act="restart">Restart this level</button>' +
     '<button data-act="tipson">Show first-level tips again</button>' +
     '<button data-act="reset">Erase my progress</button><button data-act="menu">Back</button></div>');
 }
@@ -583,6 +675,7 @@ document.addEventListener('click', function (e) {
   var t = e.target, b = t.closest('[data-act]');
   if (b) return act(b.getAttribute('data-act'), b);
   if (!S) return;
+  if (S.style === 'grid') { var gc = t.closest('.card.gcard'); if (gc) gridTap(+gc.getAttribute('data-id')); return; }
   var cd = t.closest('.card.play'); if (cd) return tapCard('col', +cd.parentNode.getAttribute('data-col'));
   var sw = t.closest('.slot'); if (sw) return tapSlot(+sw.getAttribute('data-slot'));
   var col = t.closest('.col'); if (col) return tapColumn(+col.getAttribute('data-col'));
@@ -607,18 +700,23 @@ function act(a, el) {
   else if (a === 'tipson') { P.coachDone = false; saveP(); closeModal(); render(); }
   else if (a === 'fs') { P.fs = P.fs === 1 ? 1.15 : P.fs === 1.15 ? 1.3 : 1; saveP(); applyFs(); settings(); render(); }
   else if (a === 'snd') { P.sound = !P.sound; saveP(); settings(); }
+  else if (a === 'hidebible') { P.hideBible = !P.hideBible; saveP(); if (P.hideBible && S && S.mode === 'bible') { startLevel(P.curs.words || 1, { mode: 'words' }); } settings(); }
+  else if (a === 'zen') { P.zen = !P.zen; saveP(); settings(); render(); }
+  else if (a === 'restart') { closeModal(); restartCur(); }
+  else if (a === 'style') { P.style = P.style === 'grid' ? 'solitaire' : 'grid'; saveP(); log('style_switch', { to: P.style }); closeModal(); restartCur(); }
+  else if (a === 'share') { shareResult(); }
   else if (a === 'reset') { if (confirm('Erase all progress and results on this phone?')) { P = defaults(); ST = { ev: [] }; saveP(); store('dw_stats', ST); store('dw_cur', null); startLevel(1); welcome(); } }
   else if (a === 'fun') { log('fun', { v: el.getAttribute('data-v') }); el.parentNode.parentNode.innerHTML = '<p>Thank you!</p>'; }
   else if (a === 'copy') { var r = $('rep'); r.select(); try { document.execCommand('copy'); toast('Copied'); } catch (x) { } }
   else if (a === 'remove') { log('removeads_tap'); modal('<h2>Remove ads</h2><p class="sub">This test version has no ads at all, and nothing is for sale yet. Thank you for telling us you would want this.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
 }
-$('bUndo').onclick = undo;
+$('bUndo').onclick = function () { if (S && S.style === 'grid') gridShuffle(); else undo(); };
 $('bHint').onclick = function () {
   if (S && S.hints <= 0) { log('adhint_tap'); S.hints += 3; toast('Test version: no real ad. Here are 3 more hints!'); render(); return; }
   giveHint();
 };
 $('bMenu').onclick = function () { unlock(); menu(); };
-$('bRestart').onclick = function () { if (S && !S.won) restartCur(); };
+$('bRestart').onclick = function () { if (!S || S.won) return; if (S.style === 'grid') gridSubmit(); else restartCur(); };
 window.addEventListener('resize', render);
 function applyFs() { document.documentElement.style.setProperty('--fs', P.fs); }
 applyFs();
@@ -629,6 +727,7 @@ try {
   if (cur && cur.cols) {
     var lv = makeLevel(cur.n, cur.seed, cur.daily ? DCFG : null, cur.mode || 'words');
     S = newState(lv, cur.daily); S.cols = cur.cols; S.slots = cur.slots; S.misses = cur.misses; S.moves = cur.moves; S.hints = cur.hints; S.t0 = cur.t0;
+    S.style = cur.style || 'solitaire'; if (cur.gorder) { S.gsel = cur.gsel || []; S.gfound = cur.gfound || []; S.gorder = cur.gorder; } S.doneOrder = cur.doneOrder || [];
     render();
   } else startLevel(P.curs[P.mode] || 1, { mode: P.mode });
 } catch (e) { store('dw_cur', null); P.mode = 'words'; startLevel(1); }
@@ -637,6 +736,7 @@ if (P.first) { P.first = false; saveP(); welcome(); }
 window.DW = {
   makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel,
   autoplay: function () {
+    if (S.style === 'grid') { var gg = 0; while (!S.won && gg++ < 20) { var left = S.lv.cats.map(function (c, i) { return i; }).filter(function (i) { return !isFound(i); }); S.gsel = S.gorder.filter(function (id) { return S.lv.cards[id].cat === left[0]; }); gridSubmit(); } return S.won; }
     var guard = 0;
     while (!S.won && guard++ < 500) {
       var played = false, e = ends().filter(function (x) { return x.from === 'col'; });
