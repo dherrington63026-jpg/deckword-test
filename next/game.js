@@ -173,7 +173,7 @@ function makeLevel(n, seed, over, mode) {
 
 // ---------- state ----------
 var S = null, hist = [];
-function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none' } }; }
+function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true } }; }
 var P = store('dw_prog') || defaults();
 (function migrate() { // from the first test version
   var d = defaults();
@@ -593,9 +593,12 @@ function shareResult() {
 }
 
 
-// ---------- themes: backgrounds, colors, card styles, seasons ----------
+// ---------- themes: holidays, backgrounds, colors, card styles, seasons ----------
 // item = [id, label, free?, swatch]. In this preview everything can be tried; "paid" ones are counted so we learn what people like.
 var TH = {
+  hol: { label: 'Holidays', items: [
+    ['none', 'None', 1, '∅'], ['christmas', 'Christmas', 1, '🎄'], ['halloween', 'Halloween', 1, '🎃'], ['thanksgiving', 'Thanksgiving', 1, '🦃'],
+    ['july4', '4th of July', 1, '🎆'], ['valentine', 'Valentine’s', 1, '💝'], ['stpat', 'St. Patrick’s', 1, '🍀'], ['easter', 'Easter', 1, '🐣'], ['newyear', 'New Year’s Eve', 1, '🥂'] ] },
   bg: { label: 'Backgrounds', items: [
     ['auto', 'Auto', 1, 'linear-gradient(135deg,#fbf6ee,#efd9c2)'], ['meadow', 'Meadow', 0, 'linear-gradient(135deg,#f3faea,#c5e6ae)'], ['sunset', 'Sunset', 0, 'linear-gradient(135deg,#fff1e8,#f4a9a0)'],
     ['night', 'Night sky', 0, 'linear-gradient(135deg,#3b3f9c,#0a0b22)'], ['lake', 'Lake', 0, 'linear-gradient(135deg,#eaf8fb,#8fd0e4)'], ['autumn', 'Autumn', 0, 'linear-gradient(135deg,#fff4e0,#e8ac62)'], ['winter', 'Winter', 0, 'linear-gradient(135deg,#f4f9fe,#bcd4ec)'] ] },
@@ -605,59 +608,136 @@ var TH = {
   card: { label: 'Cards', items: [
     ['classic', 'Classic', 1], ['paper', 'Paper', 0], ['wood', 'Wood', 0], ['glass', 'Frosted', 0], ['pastel', 'Pastel', 0], ['bold', 'Bold', 0] ] },
   season: { label: 'Seasons', items: [
-    ['none', 'None', 1, '∅'], ['spring', 'Spring', 0, '🌸'], ['summer', 'Summer', 0, '✨'], ['fall', 'Fall', 1, '🍂'], ['winter', 'Winter', 0, '❄️'], ['holiday', 'Holidays', 0, '🎄'] ] }
+    ['none', 'None', 1, '∅'], ['spring', 'Spring', 0, '🌸'], ['summer', 'Summer', 0, '✨'], ['fall', 'Fall', 1, '🍂'], ['winter', 'Winter', 0, '❄️'] ] }
 };
 var DARKBG = { night: 1 };
+var DARKHOL = { july4: 1, halloween: 1, christmas: 1, newyear: 1 };
+var HOLNAME = { christmas: 'Christmas', halloween: 'Halloween', thanksgiving: 'Thanksgiving', july4: 'the 4th of July', valentine: 'Valentine’s Day', stpat: 'St. Patrick’s Day', easter: 'Easter', newyear: 'New Year’s' };
+function easterDate(y) { var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1; return new Date(y, mo - 1, da); }
+function holidayNow(d) {
+  d = d || new Date(); var y = d.getFullYear(), t = new Date(y, d.getMonth(), d.getDate()).getTime(), DAY = 864e5;
+  function inRange(m1, d1, m2, d2) { return t >= new Date(y, m1 - 1, d1).getTime() && t <= new Date(y, m2 - 1, d2).getTime(); }
+  if (inRange(12, 28, 12, 31) || inRange(1, 1, 1, 2)) return 'newyear';
+  if (inRange(12, 1, 12, 26)) return 'christmas';
+  if (inRange(10, 17, 10, 31)) return 'halloween';
+  var tg = new Date(y, 10, 1); while (tg.getDay() !== 4) tg.setDate(tg.getDate() + 1); tg = new Date(y, 10, tg.getDate() + 21);
+  if (t >= tg.getTime() - 9 * DAY && t <= tg.getTime() + DAY) return 'thanksgiving';
+  if (inRange(6, 27, 7, 5)) return 'july4';
+  var ea = easterDate(y).getTime(); if (t >= ea - 8 * DAY && t <= ea) return 'easter';
+  if (inRange(3, 10, 3, 17)) return 'stpat';
+  if (inRange(2, 6, 2, 14)) return 'valentine';
+  return 'none';
+}
+function activeHoliday() {
+  var t = P.theme || {};
+  if (t.hol && t.hol !== 'none') return t.hol;
+  var custom = (t.bg && t.bg !== 'auto') || (t.color && t.color !== 'auto') || (t.season && t.season !== 'none');
+  return (t.auto !== false && !custom) ? holidayNow() : 'none';
+}
 function applyTheme() {
-  var t = P.theme || {}, b = document.body;
+  var t = P.theme || {}, b = document.body, hol = activeHoliday();
   function at(k, v, off) { if (!v || v === off) b.removeAttribute(k); else b.setAttribute(k, v); }
-  at('data-bg', t.bg, 'auto'); at('data-color', t.color, 'auto'); at('data-card', t.card, 'classic');
+  at('data-card', t.card, 'classic');
+  if (hol !== 'none') {
+    b.setAttribute('data-hol', hol); b.removeAttribute('data-bg'); b.removeAttribute('data-color');
+    if (DARKHOL[hol]) b.setAttribute('data-tone', 'dark'); else b.setAttribute('data-tone', 'light');
+    fxStart(hol);
+    var key = 'hol' + hol + new Date().getFullYear();
+    if ((!t.hol || t.hol === 'none') && !P.seen[key]) { P.seen[key] = 1; saveP(); setTimeout(function () { toast('Happy ' + HOLNAME[hol] + '! A holiday theme is on. Change it any time in Themes.'); }, 900); }
+    return;
+  }
+  b.removeAttribute('data-hol');
+  at('data-bg', t.bg, 'auto'); at('data-color', t.color, 'auto');
   if (DARKBG[t.bg]) b.setAttribute('data-tone', 'dark'); else if (t.bg && t.bg !== 'auto') b.setAttribute('data-tone', 'light'); else b.removeAttribute('data-tone');
   fxStart(t.season || 'none');
 }
-var FX = { id: 'none', raf: 0, parts: [] };
+
+// ----- moving decorations (one small canvas behind the game; stops when the phone asks for less motion) -----
+var FX = { id: 'none', raf: 0, parts: [], bursts: [], bats: [] };
+var FXL = { spring: [['petal', 24]], summer: [['firefly', 26]], fall: [['leaf', 22]], winter: [['snow', 44]], christmas: [['snow', 34], ['lights', 0]], valentine: [['heart', 22]], stpat: [['clover', 24]],
+  easter: [['egg', 14], ['petal', 10]], july4: [['fireworks', 0]], halloween: [['bat', 6], ['ember', 18]], thanksgiving: [['leaf', 26]], newyear: [['confetti', 46], ['fireworks', 0]] };
 function fxStop() { cancelAnimationFrame(FX.raf); FX.raf = 0; var c = $('fx'); if (c) { var g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); } }
+function heartPath(g, x, y, s) { g.beginPath(); g.moveTo(x, y + s * 0.35); g.bezierCurveTo(x - s * 1.2, y - s * 0.4, x - s * 0.55, y - s * 1.1, x, y - s * 0.45); g.bezierCurveTo(x + s * 0.55, y - s * 1.1, x + s * 1.2, y - s * 0.4, x, y + s * 0.35); g.fill(); }
 function fxStart(id) {
-  fxStop(); FX.id = id;
-  var c = $('fx'); if (!c || id === 'none' || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  fxStop(); FX.id = id; FX.parts = []; FX.bursts = []; FX.bats = [];
+  var c = $('fx'); if (!c || id === 'none' || !FXL[id] || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
   var g = c.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight;
   c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  var N = { spring: 24, summer: 26, fall: 22, winter: 44, holiday: 32 }[id];
-  function mk(init) {
-    var p = { x: Math.random() * W, y: init ? Math.random() * H : -24, r: 2 + Math.random() * 3, vx: (Math.random() - 0.5) * 18, vy: 20 + Math.random() * 28, ph: Math.random() * 6.28, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 2.2 };
-    if (id === 'summer') { p.y = Math.random() * H; p.vy = (Math.random() - 0.5) * 16; p.vx = (Math.random() - 0.5) * 16; p.r = 2 + Math.random() * 2.5; }
-    if (id === 'fall') { p.col = ['#d9822b', '#c0471f', '#e0a030', '#8c4a1f'][Math.floor(Math.random() * 4)]; p.r = 6 + Math.random() * 4; p.vy = 24 + Math.random() * 26; }
-    if (id === 'spring') { p.col = Math.random() < 0.6 ? '#ffb7cf' : '#fff0f5'; p.r = 4 + Math.random() * 3; p.vy = 16 + Math.random() * 20; }
-    if (id === 'winter' || id === 'holiday') { p.r = 1.6 + Math.random() * 2.6; p.vy = 18 + Math.random() * 26; }
+  var layers = FXL[id], hasFw = false, hasLights = false, PAL = ['#ff4d4d', '#ffffff', '#4da6ff', '#ffd23f', '#ff7ac8'];
+  function mk(type, init) {
+    var p = { type: type, x: Math.random() * W, y: init ? Math.random() * H : -24, r: 2 + Math.random() * 3, vx: (Math.random() - 0.5) * 18, vy: 20 + Math.random() * 28, ph: Math.random() * 6.28, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 2.2 };
+    if (type === 'firefly' || type === 'ember') { p.y = Math.random() * H; p.vy = type === 'ember' ? -(10 + Math.random() * 18) : (Math.random() - 0.5) * 16; p.vx = (Math.random() - 0.5) * 16; p.r = 2 + Math.random() * 2.5; p.col = type === 'ember' ? '255,150,50' : '255,214,90'; }
+    if (type === 'leaf') { p.col = ['#d9822b', '#c0471f', '#e0a030', '#8c4a1f'][Math.floor(Math.random() * 4)]; p.r = 6 + Math.random() * 4; p.vy = 24 + Math.random() * 26; }
+    if (type === 'petal') { p.col = Math.random() < 0.6 ? '#ffb7cf' : '#fff0f5'; p.r = 4 + Math.random() * 3; p.vy = 16 + Math.random() * 20; }
+    if (type === 'snow') { p.r = 1.6 + Math.random() * 2.6; p.vy = 18 + Math.random() * 26; }
+    if (type === 'heart') { p.col = ['#ff5c8a', '#ff8fb1', '#ffffff', '#ff3d71'][Math.floor(Math.random() * 4)]; p.r = 5 + Math.random() * 6; p.vy = -(14 + Math.random() * 22); p.y = init ? Math.random() * H : H + 20; }
+    if (type === 'clover') { p.coin = Math.random() < 0.3; p.r = 5 + Math.random() * 4; p.vy = 18 + Math.random() * 22; }
+    if (type === 'egg') { p.col = ['#ffd6e7', '#d6ecff', '#fff3b0', '#d9f5d6', '#e6d9ff'][Math.floor(Math.random() * 5)]; p.r = 8 + Math.random() * 5; p.vy = 14 + Math.random() * 16; }
+    if (type === 'confetti') { p.col = ['#f5c542', '#ffe08a', '#ffffff', '#c9c9d6', '#ff7ac8', '#7ad7ff'][Math.floor(Math.random() * 6)]; p.vy = 30 + Math.random() * 40; p.vr = (Math.random() - 0.5) * 8; }
     return p;
   }
-  FX.parts = []; for (var i = 0; i < N; i++) FX.parts.push(mk(true));
-  var last = 0, tt = 0, lc = ['#ff4d4d', '#3ddc84', '#ffd23f', '#4da6ff'];
+  layers.forEach(function (L) {
+    if (L[0] === 'fireworks') hasFw = true; else if (L[0] === 'lights') hasLights = true;
+    else if (L[0] === 'bat') { for (var i = 0; i < L[1]; i++) FX.bats.push({ x: Math.random() * W, y: H * (0.04 + Math.random() * 0.5), vx: (Math.random() < 0.5 ? -1 : 1) * (25 + Math.random() * 30), s: 9 + Math.random() * 7, ph: Math.random() * 6.28 }); }
+    else for (var j = 0; j < L[1]; j++) FX.parts.push(mk(L[0], true));
+  });
+  var last = 0, tt = 0, nextBurst = 0, lc = ['#ff4d4d', '#3ddc84', '#ffd23f', '#4da6ff'];
+  function burst() {
+    var col = id === 'newyear' ? ['#f5c542', '#ffe08a', '#ffffff'] : PAL, cx = W * (0.15 + Math.random() * 0.7), cy = H * (0.1 + Math.random() * 0.35), parts = [], base = col[Math.floor(Math.random() * col.length)];
+    for (var i = 0; i < 30; i++) { var a = (i / 30) * 6.28 + Math.random() * 0.2, sp = 60 + Math.random() * 70; parts.push({ vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, c: Math.random() < 0.7 ? base : col[Math.floor(Math.random() * col.length)] }); }
+    FX.bursts.push({ x: cx, y: cy, t: 0, parts: parts });
+  }
   function frame(t) {
     FX.raf = requestAnimationFrame(frame);
     if (t - last < 32) return; var dt = Math.min(0.06, (t - last) / 1000); last = t; tt += dt;
     g.clearRect(0, 0, W, H);
     FX.parts.forEach(function (p) {
       p.ph += dt * 1.6; p.x += (p.vx + Math.sin(p.ph) * 14) * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
-      if (id === 'summer') {
+      var ty = p.type;
+      if (ty === 'firefly' || ty === 'ember') {
         if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10; if (p.y < -10) p.y = H + 10; if (p.y > H + 10) p.y = -10;
         var a = 0.35 + 0.4 * Math.sin(p.ph * 1.7), gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-        gr.addColorStop(0, 'rgba(255,214,90,' + a + ')'); gr.addColorStop(1, 'rgba(255,214,90,0)'); g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r * 4, 0, 6.28); g.fill();
-      } else if (id === 'winter' || id === 'holiday') {
-        g.fillStyle = 'rgba(255,255,255,.92)'; g.strokeStyle = 'rgba(110,140,185,.35)'; g.lineWidth = 0.7; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.28); g.fill(); g.stroke();
-      } else if (id === 'spring') {
-        g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.9; g.beginPath(); g.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, 6.28); g.fill(); g.restore();
-      } else if (id === 'fall') {
-        g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.92; g.beginPath(); g.moveTo(0, -p.r); g.quadraticCurveTo(p.r, 0, 0, p.r); g.quadraticCurveTo(-p.r, 0, 0, -p.r); g.fill(); g.strokeStyle = 'rgba(80,40,10,.45)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, -p.r); g.lineTo(0, p.r); g.stroke(); g.restore();
+        gr.addColorStop(0, 'rgba(' + p.col + ',' + a + ')'); gr.addColorStop(1, 'rgba(' + p.col + ',0)'); g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r * 4, 0, 6.28); g.fill(); return;
       }
-      if (id !== 'summer' && (p.y > H + 24 || p.x < -30 || p.x > W + 30)) { var q = mk(false); p.x = q.x; p.y = -20; }
+      if (ty === 'snow') { g.fillStyle = 'rgba(255,255,255,.92)'; g.strokeStyle = 'rgba(110,140,185,.35)'; g.lineWidth = 0.7; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.28); g.fill(); g.stroke(); }
+      else if (ty === 'petal') { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.9; g.beginPath(); g.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, 6.28); g.fill(); g.restore(); }
+      else if (ty === 'leaf') { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.92; g.beginPath(); g.moveTo(0, -p.r); g.quadraticCurveTo(p.r, 0, 0, p.r); g.quadraticCurveTo(-p.r, 0, 0, -p.r); g.fill(); g.strokeStyle = 'rgba(80,40,10,.45)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, -p.r); g.lineTo(0, p.r); g.stroke(); g.restore(); }
+      else if (ty === 'heart') { g.save(); g.translate(p.x, p.y); g.rotate(Math.sin(p.ph) * 0.35); g.fillStyle = p.col; g.globalAlpha = 0.85; heartPath(g, 0, 0, p.r); g.restore(); }
+      else if (ty === 'clover') {
+        g.save(); g.translate(p.x, p.y); g.rotate(p.rot);
+        if (p.coin) { g.fillStyle = '#f5c542'; g.strokeStyle = '#c9961b'; g.lineWidth = 1; g.beginPath(); g.arc(0, 0, p.r * 0.8, 0, 6.28); g.fill(); g.stroke(); g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.arc(-p.r * 0.25, -p.r * 0.25, p.r * 0.25, 0, 6.28); g.fill(); }
+        else { g.fillStyle = '#2f9e5b'; g.globalAlpha = 0.92; var q = p.r * 0.5; [[-q, -q], [q, -q], [-q, q], [q, q]].forEach(function (o) { g.beginPath(); g.arc(o[0], o[1], q * 1.05, 0, 6.28); g.fill(); }); g.strokeStyle = '#1f7a45'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, 0); g.lineTo(q * 0.8, q * 2.2); g.stroke(); }
+        g.restore();
+      }
+      else if (ty === 'egg') { g.save(); g.translate(p.x, p.y); g.rotate(Math.sin(p.ph) * 0.4); g.fillStyle = p.col; g.globalAlpha = 0.92; g.beginPath(); g.ellipse(0, 0, p.r * 0.72, p.r, 0, 0, 6.28); g.fill(); g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(-p.r * 0.7, -p.r * 0.1); g.lineTo(-p.r * 0.3, p.r * 0.1); g.lineTo(0, -p.r * 0.1); g.lineTo(p.r * 0.3, p.r * 0.1); g.lineTo(p.r * 0.7, -p.r * 0.1); g.stroke(); g.restore(); }
+      else if (ty === 'confetti') { g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.9; g.fillRect(-4, -2, 8, 4); g.restore(); }
+      var up = (ty === 'heart');
+      if ((!up && p.y > H + 24) || (up && p.y < -24) || p.x < -30 || p.x > W + 30) { var q2 = mk(ty, false); p.x = q2.x; p.y = up ? H + 20 : -20; }
     });
-    if (id === 'holiday') {
+    FX.bats.forEach(function (b) {
+      b.ph += dt * 9; b.x += b.vx * dt; b.y += Math.sin(b.ph * 0.2) * 12 * dt;
+      if (b.x < -40) b.x = W + 40; if (b.x > W + 40) b.x = -40;
+      var fl = Math.sin(b.ph), s = b.s; g.save(); g.translate(b.x, b.y); if (b.vx < 0) g.scale(-1, 1);
+      g.fillStyle = '#150a20'; g.strokeStyle = 'rgba(255,140,40,.6)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(s * 0.6, -s * (0.9 + fl * 0.5), s * 1.5, -s * 0.2 * fl); g.quadraticCurveTo(s * 1.0, s * 0.1, s * 0.5, s * 0.25); g.lineTo(0, s * 0.45); g.lineTo(-s * 0.5, s * 0.25); g.quadraticCurveTo(-s * 1.0, s * 0.1, -s * 1.5, -s * 0.2 * fl); g.quadraticCurveTo(-s * 0.6, -s * (0.9 + fl * 0.5), 0, 0); g.fill(); g.stroke(); g.restore();
+    });
+    if (hasFw) {
+      g.globalCompositeOperation = 'lighter';
+      nextBurst -= dt; if (nextBurst <= 0) { burst(); nextBurst = 0.9 + Math.random() * 1.1; }
+      FX.bursts = FX.bursts.filter(function (B) {
+        B.t += dt; if (B.t > 1.6) return false;
+        var al = Math.max(0, 1 - B.t / 1.6);
+        B.parts.forEach(function (q) { var x = B.x + q.vx * B.t, y = B.y + q.vy * B.t + 55 * B.t * B.t; g.fillStyle = q.c; g.globalAlpha = al; g.beginPath(); g.arc(x, y, 2 * (0.4 + al), 0, 6.28); g.fill(); });
+        g.globalAlpha = 1; return true;
+      });
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+    }
+    if (hasLights) {
       g.strokeStyle = 'rgba(40,40,40,.55)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-5, 4);
       var n = Math.ceil(W / 40) + 1;
-      for (var k = 0; k <= n; k++) { var x = k * 40, y = 4 + (k % 2 ? 16 : 6); g.quadraticCurveTo(x - 20, y + 8, x, 4 + (k % 2 ? 10 : 2)); }
+      for (var k = 0; k <= n; k++) { var x = k * 40; g.quadraticCurveTo(x - 20, 12 + (k % 2 ? 16 : 6), x, 4 + (k % 2 ? 10 : 2)); }
       g.stroke();
-      for (var j = 0; j < n; j++) { var bx = j * 40 + 14, by = 14 + (j % 2 ? 12 : 4), al = 0.55 + 0.45 * Math.sin(tt * 3 + j * 1.3); g.fillStyle = lc[j % 4]; g.globalAlpha = al; g.beginPath(); g.arc(bx, by, 5, 0, 6.28); g.fill(); g.globalAlpha = al * 0.35; g.beginPath(); g.arc(bx, by, 10, 0, 6.28); g.fill(); g.globalAlpha = 1; }
+      for (var j = 0; j < n; j++) { var bx = j * 40 + 14, by = 14 + (j % 2 ? 12 : 4), al2 = 0.55 + 0.45 * Math.sin(tt * 3 + j * 1.3); g.fillStyle = lc[j % 4]; g.globalAlpha = al2; g.beginPath(); g.arc(bx, by, 5, 0, 6.28); g.fill(); g.globalAlpha = al2 * 0.35; g.beginPath(); g.arc(bx, by, 10, 0, 6.28); g.fill(); g.globalAlpha = 1; }
     }
   }
   FX.raf = requestAnimationFrame(frame);
@@ -667,13 +747,14 @@ var fxRz = 0; window.addEventListener('resize', function () { clearTimeout(fxRz)
 
 function themeChip(k, it) {
   var sel = (P.theme[k] === it[0]);
-  var sw = k === 'card' ? '<span class="tsw tcard" data-c="' + it[0] + '">Aa</span>' : k === 'season' ? '<span class="tsw temo">' + it[3] + '</span>' : '<span class="tsw" style="background:' + it[3] + '"></span>';
-  return '<button class="tchip' + (sel ? ' sel' : '') + '" data-act="theme" data-k="' + k + '" data-v="' + it[0] + '">' + sw + '<b>' + esc(it[1]) + '</b><small>' + (it[2] ? 'Free' : 'Paid') + '</small></button>';
+  var sw = k === 'card' ? '<span class="tsw tcard" data-c="' + it[0] + '">Aa</span>' : (k === 'season' || k === 'hol') ? '<span class="tsw temo">' + it[3] + '</span>' : '<span class="tsw" style="background:' + it[3] + '"></span>';
+  return '<button class="tchip' + (sel ? ' sel' : '') + '" data-act="theme" data-k="' + k + '" data-v="' + it[0] + '">' + sw + '<b>' + esc(it[1]) + '</b><small>' + (k === 'hol' && it[0] !== 'none' ? 'Seasonal' : it[2] ? 'Free' : 'Paid') + '</small></button>';
 }
 function themes() {
-  var h = '<h2>Themes</h2><p class="sub">Try anything. In this preview everything is free; in the full game the ones marked Paid cost a little.</p>';
+  var auto = P.theme.auto !== false, h = '<h2>Themes</h2><p class="sub">Try anything. In this preview everything is free; in the full game the ones marked Paid cost a little.</p>';
   Object.keys(TH).forEach(function (k) {
-    h += '<div class="tsec"><h3>' + TH[k].label + '</h3><div class="tgrid">' + TH[k].items.map(function (it) { return themeChip(k, it); }).join('') + '</div></div>';
+    h += '<div class="tsec"><h3>' + TH[k].label + '</h3><div class="tgrid">' + TH[k].items.map(function (it) { return themeChip(k, it); }).join('') + '</div>' +
+      (k === 'hol' ? '<button class="tauto" data-act="holauto">Switch on by itself during each holiday: <b>' + (auto ? 'On' : 'Off') + '</b></button>' : '') + '</div>';
   });
   modal(h + '<div class="row"><button class="pri" data-act="resume">Done</button><button data-act="themereset">Reset</button></div>');
 }
@@ -726,7 +807,8 @@ function menu() {
     '<button data-act="how">How to play</button>' +
     '<button data-act="settings">Settings</button>' +
     '<button data-act="stats">My stats</button>' +
-    '<button data-act="remove">Remove ads: $3.99</button></div>');
+    '<button data-act="remove">Remove ads: $3.99</button>' +
+    '<button data-act="restore">Restore purchases</button></div>');
 }
 function modes() {
   var h = '<h2>Choose a mode</h2><div class="grid1">', cm = S ? S.mode : P.mode;
@@ -891,11 +973,12 @@ function act(a, el) {
   else if (a === 'themes') themes();
   else if (a === 'theme') {
     var tk = el.getAttribute('data-k'), tv = el.getAttribute('data-v'), item = TH[tk].items.filter(function (x) { return x[0] === tv; })[0];
-    P.theme[tk] = tv; saveP(); applyTheme(); log('theme_try', { k: tk, v: tv, paid: item[2] ? 0 : 1 });
+    P.theme[tk] = tv; if (tk === 'hol' && tv === 'none') P.theme.auto = false; saveP(); applyTheme(); log('theme_try', { k: tk, v: tv, paid: item[2] ? 0 : 1 });
     document.querySelectorAll('.tchip[data-k="' + tk + '"]').forEach(function (c) { c.classList.toggle('sel', c === el); });
     if (!item[2]) toast('Free to try now. In the full game this one is a small paid extra.');
   }
-  else if (a === 'themereset') { P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none' }; saveP(); applyTheme(); themes(); }
+  else if (a === 'themereset') { P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true }; saveP(); applyTheme(); themes(); }
+  else if (a === 'holauto') { P.theme.auto = P.theme.auto === false; saveP(); applyTheme(); themes(); }
   else if (a === 'mode') { var m = el.getAttribute('data-m'); log('mode_switch', { to: m }); startLevel(P.curs[m] || 1, { mode: m }); }
   else if (a === 'daily') { var dm = dailyMode(); startLevel(45, { daily: true, seed: +dstr().replace(/-/g, ''), cfg: DCFG, mode: dm }); }
   else if (a === 'coachoff') { P.coachDone = true; saveP(); S.bye = 0; render(); }
@@ -910,6 +993,7 @@ function act(a, el) {
   else if (a === 'reset') { if (confirm('Erase all progress and results on this phone?')) { P = defaults(); ST = { ev: [] }; saveP(); store('dw_stats', ST); store('dw_cur', null); startLevel(1); welcome(); } }
   else if (a === 'fun') { log('fun', { v: el.getAttribute('data-v') }); el.parentNode.parentNode.innerHTML = '<p>Thank you!</p>'; }
   else if (a === 'copy') { var r = $('rep'); r.select(); try { document.execCommand('copy'); toast('Copied'); } catch (x) { } }
+  else if (a === 'restore') { log('restore_tap'); modal('<h2>Restore purchases</h2><p class="sub">Bought something before, or got a new phone? Tap Restore and everything you paid for comes back, using the same Apple ID or Google account you bought with. You never pay twice.</p><p class="sub"><b>This preview has no purchases yet, so there is nothing to restore.</b> In the finished app this button checks your store account and unlocks what you own.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
   else if (a === 'remove') { log('removeads_tap'); modal('<h2>Remove ads</h2><p class="sub">This preview has no ads at all, and nothing is for sale yet. Thank you for telling us you would want this.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
 }
 $('bUndo').onclick = function () { if (S && S.style === 'grid') gridShuffle(); else undo(); };
@@ -922,7 +1006,7 @@ $('bRestart').onclick = function () { if (!S || S.won) return; if (S.style === '
 window.addEventListener('resize', render);
 function applyFs() { document.documentElement.style.setProperty('--fs', P.fs); }
 applyFs();
-if (!P.theme) P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none' };
+P.theme = Object.assign({ bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true }, P.theme || {}); if (P.theme.season === 'holiday') P.theme.season = 'none';
 applyTheme();
 
 // ---------- start ----------
@@ -938,7 +1022,7 @@ try {
 if (P.first) { P.first = false; saveP(); welcome(); }
 
 window.DW = {
-  makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel,
+  makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel, holidayNow: holidayNow, activeHoliday: activeHoliday, fxStart: fxStart, FX: FX,
   autoplay: function () {
     if (S.style === 'grid') { var gg = 0; while (!S.won && gg++ < 20) { var left = S.lv.cats.map(function (c, i) { return i; }).filter(function (i) { return !isFound(i); }); S.gsel = S.gorder.filter(function (id) { return S.lv.cards[id].cat === left[0]; }); gridSubmit(); } return S.won; }
     var guard = 0;
