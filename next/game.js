@@ -173,7 +173,7 @@ function makeLevel(n, seed, over, mode) {
 
 // ---------- state ----------
 var S = null, hist = [];
-function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false }; }
+function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none' } }; }
 var P = store('dw_prog') || defaults();
 (function migrate() { // from the first test version
   var d = defaults();
@@ -592,6 +592,92 @@ function shareResult() {
   ta.remove();
 }
 
+
+// ---------- themes: backgrounds, colors, card styles, seasons ----------
+// item = [id, label, free?, swatch]. In this preview everything can be tried; "paid" ones are counted so we learn what people like.
+var TH = {
+  bg: { label: 'Backgrounds', items: [
+    ['auto', 'Auto', 1, 'linear-gradient(135deg,#fbf6ee,#efd9c2)'], ['meadow', 'Meadow', 0, 'linear-gradient(135deg,#f3faea,#c5e6ae)'], ['sunset', 'Sunset', 0, 'linear-gradient(135deg,#fff1e8,#f4a9a0)'],
+    ['night', 'Night sky', 0, 'linear-gradient(135deg,#3b3f9c,#0a0b22)'], ['lake', 'Lake', 0, 'linear-gradient(135deg,#eaf8fb,#8fd0e4)'], ['autumn', 'Autumn', 0, 'linear-gradient(135deg,#fff4e0,#e8ac62)'], ['winter', 'Winter', 0, 'linear-gradient(135deg,#f4f9fe,#bcd4ec)'] ] },
+  color: { label: 'Colors', items: [
+    ['auto', 'Auto', 1, 'linear-gradient(135deg,#ff6b4a,#7a5af8)'], ['coral', 'Coral', 0, 'linear-gradient(135deg,#ff6b4a,#ff9a5a)'], ['ocean', 'Ocean', 0, 'linear-gradient(135deg,#2a7de1,#5bc0f8)'],
+    ['lavender', 'Lavender', 0, 'linear-gradient(135deg,#8a63d2,#b99bff)'], ['forest', 'Forest', 0, 'linear-gradient(135deg,#2f8f5b,#7acb8c)'], ['berry', 'Berry', 0, 'linear-gradient(135deg,#c2386f,#f27aa8)'], ['mono', 'Mono', 0, 'linear-gradient(135deg,#4a4a55,#9a9aa8)'] ] },
+  card: { label: 'Cards', items: [
+    ['classic', 'Classic', 1], ['paper', 'Paper', 0], ['wood', 'Wood', 0], ['glass', 'Frosted', 0], ['pastel', 'Pastel', 0], ['bold', 'Bold', 0] ] },
+  season: { label: 'Seasons', items: [
+    ['none', 'None', 1, '∅'], ['spring', 'Spring', 0, '🌸'], ['summer', 'Summer', 0, '✨'], ['fall', 'Fall', 1, '🍂'], ['winter', 'Winter', 0, '❄️'], ['holiday', 'Holidays', 0, '🎄'] ] }
+};
+var DARKBG = { night: 1 };
+function applyTheme() {
+  var t = P.theme || {}, b = document.body;
+  function at(k, v, off) { if (!v || v === off) b.removeAttribute(k); else b.setAttribute(k, v); }
+  at('data-bg', t.bg, 'auto'); at('data-color', t.color, 'auto'); at('data-card', t.card, 'classic');
+  if (DARKBG[t.bg]) b.setAttribute('data-tone', 'dark'); else if (t.bg && t.bg !== 'auto') b.setAttribute('data-tone', 'light'); else b.removeAttribute('data-tone');
+  fxStart(t.season || 'none');
+}
+var FX = { id: 'none', raf: 0, parts: [] };
+function fxStop() { cancelAnimationFrame(FX.raf); FX.raf = 0; var c = $('fx'); if (c) { var g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); } }
+function fxStart(id) {
+  fxStop(); FX.id = id;
+  var c = $('fx'); if (!c || id === 'none' || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  var g = c.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight;
+  c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var N = { spring: 24, summer: 26, fall: 22, winter: 44, holiday: 32 }[id];
+  function mk(init) {
+    var p = { x: Math.random() * W, y: init ? Math.random() * H : -24, r: 2 + Math.random() * 3, vx: (Math.random() - 0.5) * 18, vy: 20 + Math.random() * 28, ph: Math.random() * 6.28, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 2.2 };
+    if (id === 'summer') { p.y = Math.random() * H; p.vy = (Math.random() - 0.5) * 16; p.vx = (Math.random() - 0.5) * 16; p.r = 2 + Math.random() * 2.5; }
+    if (id === 'fall') { p.col = ['#d9822b', '#c0471f', '#e0a030', '#8c4a1f'][Math.floor(Math.random() * 4)]; p.r = 6 + Math.random() * 4; p.vy = 24 + Math.random() * 26; }
+    if (id === 'spring') { p.col = Math.random() < 0.6 ? '#ffb7cf' : '#fff0f5'; p.r = 4 + Math.random() * 3; p.vy = 16 + Math.random() * 20; }
+    if (id === 'winter' || id === 'holiday') { p.r = 1.6 + Math.random() * 2.6; p.vy = 18 + Math.random() * 26; }
+    return p;
+  }
+  FX.parts = []; for (var i = 0; i < N; i++) FX.parts.push(mk(true));
+  var last = 0, tt = 0, lc = ['#ff4d4d', '#3ddc84', '#ffd23f', '#4da6ff'];
+  function frame(t) {
+    FX.raf = requestAnimationFrame(frame);
+    if (t - last < 32) return; var dt = Math.min(0.06, (t - last) / 1000); last = t; tt += dt;
+    g.clearRect(0, 0, W, H);
+    FX.parts.forEach(function (p) {
+      p.ph += dt * 1.6; p.x += (p.vx + Math.sin(p.ph) * 14) * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (id === 'summer') {
+        if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10; if (p.y < -10) p.y = H + 10; if (p.y > H + 10) p.y = -10;
+        var a = 0.35 + 0.4 * Math.sin(p.ph * 1.7), gr = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
+        gr.addColorStop(0, 'rgba(255,214,90,' + a + ')'); gr.addColorStop(1, 'rgba(255,214,90,0)'); g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, p.r * 4, 0, 6.28); g.fill();
+      } else if (id === 'winter' || id === 'holiday') {
+        g.fillStyle = 'rgba(255,255,255,.92)'; g.strokeStyle = 'rgba(110,140,185,.35)'; g.lineWidth = 0.7; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.28); g.fill(); g.stroke();
+      } else if (id === 'spring') {
+        g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.9; g.beginPath(); g.ellipse(0, 0, p.r, p.r * 0.55, 0, 0, 6.28); g.fill(); g.restore();
+      } else if (id === 'fall') {
+        g.save(); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.col; g.globalAlpha = 0.92; g.beginPath(); g.moveTo(0, -p.r); g.quadraticCurveTo(p.r, 0, 0, p.r); g.quadraticCurveTo(-p.r, 0, 0, -p.r); g.fill(); g.strokeStyle = 'rgba(80,40,10,.45)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, -p.r); g.lineTo(0, p.r); g.stroke(); g.restore();
+      }
+      if (id !== 'summer' && (p.y > H + 24 || p.x < -30 || p.x > W + 30)) { var q = mk(false); p.x = q.x; p.y = -20; }
+    });
+    if (id === 'holiday') {
+      g.strokeStyle = 'rgba(40,40,40,.55)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-5, 4);
+      var n = Math.ceil(W / 40) + 1;
+      for (var k = 0; k <= n; k++) { var x = k * 40, y = 4 + (k % 2 ? 16 : 6); g.quadraticCurveTo(x - 20, y + 8, x, 4 + (k % 2 ? 10 : 2)); }
+      g.stroke();
+      for (var j = 0; j < n; j++) { var bx = j * 40 + 14, by = 14 + (j % 2 ? 12 : 4), al = 0.55 + 0.45 * Math.sin(tt * 3 + j * 1.3); g.fillStyle = lc[j % 4]; g.globalAlpha = al; g.beginPath(); g.arc(bx, by, 5, 0, 6.28); g.fill(); g.globalAlpha = al * 0.35; g.beginPath(); g.arc(bx, by, 10, 0, 6.28); g.fill(); g.globalAlpha = 1; }
+    }
+  }
+  FX.raf = requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange', function () { if (document.hidden) cancelAnimationFrame(FX.raf); else if (FX.id !== 'none') fxStart(FX.id); });
+var fxRz = 0; window.addEventListener('resize', function () { clearTimeout(fxRz); fxRz = setTimeout(function () { if (FX.id !== 'none') fxStart(FX.id); }, 250); });
+
+function themeChip(k, it) {
+  var sel = (P.theme[k] === it[0]);
+  var sw = k === 'card' ? '<span class="tsw tcard" data-c="' + it[0] + '">Aa</span>' : k === 'season' ? '<span class="tsw temo">' + it[3] + '</span>' : '<span class="tsw" style="background:' + it[3] + '"></span>';
+  return '<button class="tchip' + (sel ? ' sel' : '') + '" data-act="theme" data-k="' + k + '" data-v="' + it[0] + '">' + sw + '<b>' + esc(it[1]) + '</b><small>' + (it[2] ? 'Free' : 'Paid') + '</small></button>';
+}
+function themes() {
+  var h = '<h2>Themes</h2><p class="sub">Try anything. In this preview everything is free; in the full game the ones marked Paid cost a little.</p>';
+  Object.keys(TH).forEach(function (k) {
+    h += '<div class="tsec"><h3>' + TH[k].label + '</h3><div class="tgrid">' + TH[k].items.map(function (it) { return themeChip(k, it); }).join('') + '</div></div>';
+  });
+  modal(h + '<div class="row"><button class="pri" data-act="resume">Done</button><button data-act="themereset">Reset</button></div>');
+}
+
 // ---------- modals ----------
 function modal(html) { var m = $('modal'); m.innerHTML = '<div class="sheet">' + html + '</div>'; m.classList.add('on'); }
 function closeModal() { $('modal').classList.remove('on'); $('modal').innerHTML = ''; }
@@ -635,6 +721,7 @@ function menu() {
     '<button class="mt" data-act="modes">' + MICON[cm] + '<span><b>Game mode</b><small>Playing: ' + MODES[cm].name + ' · tap to change</small></span></button>' +
     '<button class="mt" data-act="daily"><span class="mi w" style="background:linear-gradient(145deg,#f6b73c,#ff8a4a)">' + (dailyDone ? '✓' : '★') + '</span><span><b>Daily deck: ' + MODES[dm].name + '</b><small>' + (dailyDone ? 'Done today! ' : 'New puzzle every day · ') + 'Streak ' + streak + ' day' + (streak === 1 ? '' : 's') + '</small></span></button>' +
     '<button class="mt" data-act="style"><span class="mi w" style="background:linear-gradient(145deg,#6c7ae0,#8c9bff);font-size:18px">' + (P.style === 'grid' ? '▦' : '☰') + '</span><span><b>Play style</b><small>' + (P.style === 'grid' ? 'Four Groups grid' : 'Solitaire columns') + ' · tap to switch</small></span></button>' +
+    '<button class="mt" data-act="themes"><span class="mi w" style="background:linear-gradient(135deg,#ff6b4a,#f6b73c 35%,#2bc5a8 65%,#5b6cf0)"></span><span><b>Themes</b><small>Backgrounds, colors, cards, seasons</small></span></button>' +
     '<button data-act="levels">All levels</button>' +
     '<button data-act="how">How to play</button>' +
     '<button data-act="settings">Settings</button>' +
@@ -681,19 +768,25 @@ function settings() {
 }
 function stats() {
   var ev = ST.ev, doneAll = ev.filter(function (e) { return e.e === 'level_done'; });
-  var done = doneAll.filter(function (e) { return !e.daily; });
   var days = {}; ev.forEach(function (e) { days[new Date(e.t).toDateString()] = 1; });
   function cnt(x) { return ev.filter(function (e) { return e.e === x; }).length; }
   var fun = ev.filter(function (e) { return e.e === 'fun'; }).map(function (e) { return e.v + (e.m ? '(' + e.m + ')' : ''); });
   var avgM = doneAll.length ? (doneAll.reduce(function (a, e) { return a + e.misses; }, 0) / doneAll.length).toFixed(1) : '0';
   var avgS = doneAll.length ? Math.round(doneAll.reduce(function (a, e) { return a + e.secs; }, 0) / doneAll.length) : 0;
-  var perMode = MORDER.map(function (m) { return MODES[m].name + ' ' + doneAll.filter(function (e) { return (e.m || 'words') === m; }).length; }).join(', ');
-  var rep = 'ALIKEBERRY STATS\nLevels finished (incl. daily): ' + doneAll.length + '  [' + perMode + ']\nDaily decks finished: ' + doneAll.filter(function (e) { return e.daily; }).length +
-    '\nDays played: ' + Object.keys(days).length + '\nAverage misses per level: ' + avgM + '\nAverage seconds per level: ' + avgS + '\nHints used: ' + cnt('hint') + '\nUndos: ' + cnt('undo') +
-    '\nTapped "More hints / watch an ad": ' + cnt('adhint_tap') + '\nTapped "Remove ads $3.99": ' + cnt('removeads_tap') + '\nFun answers: ' + (fun.join(', ') || 'none') +
-    '\nHighest level (Words/Colors/Pictures): ' + MORDER.map(function (m) { return Math.max.apply(null, [0].concat(Object.keys(P.sm[m]).map(Number))); }).join(' / ') +
-    '\nStreak: ' + P.streak.count + '\nMode switches: ' + cnt('mode_switch');
-  modal('<h2>My stats</h2><p class="sub">Nothing leaves your phone. Tap Copy if you would like to share your results.</p><textarea id="rep" readonly>' + esc(rep) + '</textarea><div class="row"><button data-act="copy">Copy</button><button data-act="menu">Back</button></div>');
+  var per = MORDER.map(function (m) { return [m, doneAll.filter(function (e) { return (e.m || 'words') === m; }).length]; });
+  var best = per.slice().sort(function (x, y) { return y[1] - x[1]; })[0];
+  var tried = ev.filter(function (e) { return e.e === 'theme_try'; });
+  var rep = 'ALIKEBERRY STATS\nPuzzles solved: ' + doneAll.length + '  [' + per.map(function (p) { return MODES[p[0]].name + ' ' + p[1]; }).join(', ') + ']\nDaily decks finished: ' + doneAll.filter(function (e) { return e.daily; }).length +
+    '\nDays played: ' + Object.keys(days).length + '\nAverage misses per puzzle: ' + avgM + '\nAverage seconds per puzzle: ' + avgS + '\nHints used: ' + cnt('hint') + '\nUndos: ' + cnt('undo') +
+    '\nTapped "More hints / watch an ad": ' + cnt('adhint_tap') + '\nTapped "Remove ads": ' + cnt('removeads_tap') + '\nFun answers: ' + (fun.join(', ') || 'none') +
+    '\nHighest level (per mode): ' + MORDER.map(function (m) { return Math.max.apply(null, [0].concat(Object.keys(P.sm[m]).map(Number))); }).join(' / ') +
+    '\nStreak: ' + P.streak.count + '\nMode switches: ' + cnt('mode_switch') + '\nThemes tried: ' + tried.length + ' (' + tried.filter(function (e) { return e.paid; }).map(function (e) { return e.k + ':' + e.v; }).join(', ') + ')\nShares: ' + cnt('share');
+  function tile(big, small) { return '<div class="stile"><b>' + big + '</b><span>' + small + '</span></div>'; }
+  var mx = Math.max(1, best[1]);
+  var bars = per.filter(function (p) { return p[1] > 0; }).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 5).map(function (p) { return '<div class="sbar"><span>' + MODES[p[0]].name + '</span><i><u style="width:' + Math.round(100 * p[1] / mx) + '%"></u></i><em>' + p[1] + '</em></div>'; }).join('');
+  modal('<h2>My stats</h2><div class="stg">' + tile(doneAll.length, 'Puzzles solved') + tile(Object.keys(days).length, 'Days played') + tile(avgM, 'Misses per puzzle') + tile(avgS + 's', 'Average time') +
+    tile(P.streak.count, 'Daily streak') + tile(cnt('hint'), 'Hints used') + '</div>' + (bars ? '<div class="sbars"><h3>Your top modes</h3>' + bars + '</div>' : '') +
+    '<textarea id="rep" class="hid" readonly>' + esc(rep) + '</textarea><div class="row"><button class="pri" data-act="copy">Copy my stats</button><button data-act="menu">Back</button></div>');
 }
 
 // ---------- sound ----------
@@ -795,6 +888,14 @@ function act(a, el) {
   else if (a === 'settings') settings();
   else if (a === 'stats') stats();
   else if (a === 'modes') modes();
+  else if (a === 'themes') themes();
+  else if (a === 'theme') {
+    var tk = el.getAttribute('data-k'), tv = el.getAttribute('data-v'), item = TH[tk].items.filter(function (x) { return x[0] === tv; })[0];
+    P.theme[tk] = tv; saveP(); applyTheme(); log('theme_try', { k: tk, v: tv, paid: item[2] ? 0 : 1 });
+    document.querySelectorAll('.tchip[data-k="' + tk + '"]').forEach(function (c) { c.classList.toggle('sel', c === el); });
+    if (!item[2]) toast('Free to try now. In the full game this one is a small paid extra.');
+  }
+  else if (a === 'themereset') { P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none' }; saveP(); applyTheme(); themes(); }
   else if (a === 'mode') { var m = el.getAttribute('data-m'); log('mode_switch', { to: m }); startLevel(P.curs[m] || 1, { mode: m }); }
   else if (a === 'daily') { var dm = dailyMode(); startLevel(45, { daily: true, seed: +dstr().replace(/-/g, ''), cfg: DCFG, mode: dm }); }
   else if (a === 'coachoff') { P.coachDone = true; saveP(); S.bye = 0; render(); }
@@ -821,6 +922,8 @@ $('bRestart').onclick = function () { if (!S || S.won) return; if (S.style === '
 window.addEventListener('resize', render);
 function applyFs() { document.documentElement.style.setProperty('--fs', P.fs); }
 applyFs();
+if (!P.theme) P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none' };
+applyTheme();
 
 // ---------- start ----------
 var cur = store('dw_cur');

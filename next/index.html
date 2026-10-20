@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#f7f0e6">
 <link rel="icon" href="data:,">
-<title>Alikeberry (test)</title>
+<title>Alikeberry</title>
 <style>
 @font-face{font-family:'Nunito';font-style:normal;font-weight:400 900;font-display:swap;src:url(fonts/nunito.woff2) format('woff2')}
 :root{
@@ -259,6 +259,56 @@ body.is-dragging *{cursor:grabbing!important}
 .slot .sw{font-size:calc(14px*var(--fs)*var(--ks,1))}
 .slot.done .sh{font-size:calc(15px*var(--fs)*var(--ks,1))}
 .slot.band{min-height:0}
+/* ===== themes ===== */
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+body[data-tone=light]{--ink:#2d2433;--soft:#7d7288;--line:rgba(60,40,70,.12);--card:#fff;--card2:#f4ede2;--glass:rgba(255,255,255,.62);--glass-b:rgba(255,255,255,.85);--shadow:0 1px 0 rgba(60,40,70,.06),0 10px 22px -12px rgba(60,40,70,.35)}
+body[data-tone=dark]{--ink:#f4eefb;--soft:#a9a6c9;--line:rgba(255,255,255,.14);--card:#262a52;--card2:#1e2145;--glass:rgba(255,255,255,.08);--glass-b:rgba(255,255,255,.15);--shadow:0 1px 0 rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.7)}
+body[data-bg=meadow]{--bg1:#f3faea;--bg2:#d3ecc2;--blob1:#c5e8b0;--blob2:#fff1b8}
+body[data-bg=sunset]{--bg1:#fff1e8;--bg2:#f7bfae;--blob1:#ffb38a;--blob2:#f58ab6}
+body[data-bg=night]{--bg1:#1a1c4a;--bg2:#0a0b22;--blob1:#3b3f9c;--blob2:#6b3a90}
+body[data-bg=lake]{--bg1:#eaf8fb;--bg2:#a8d9e8;--blob1:#8fd3e6;--blob2:#bfe8d4}
+body[data-bg=autumn]{--bg1:#fff4e0;--bg2:#ecbd7c;--blob1:#f2b46a;--blob2:#e58b5d}
+body[data-bg=winter]{--bg1:#f4f9fe;--bg2:#cfe0f0;--blob1:#d9ecff;--blob2:#e8e3ff}
+body[data-color=coral]{--acc:#ff6b4a;--acc2:#ff9a5a}
+body[data-color=ocean]{--acc:#2a7de1;--acc2:#5bc0f8}
+body[data-color=lavender]{--acc:#8a63d2;--acc2:#b99bff}
+body[data-color=forest]{--acc:#2f8f5b;--acc2:#7acb8c}
+body[data-color=berry]{--acc:#c2386f;--acc2:#f27aa8}
+body[data-color=mono]{--acc:#4a4a55;--acc2:#8a8a99}
+/* card styles: only the plain text cards change; photo, shade and map cards keep their own look */
+body[data-card=paper] .card:not(.c):not(.p){background:#fbf5e6 repeating-linear-gradient(0deg,rgba(120,90,40,.05) 0 1px,transparent 1px 3px);color:#4a3a22;border:1.5px solid #d6c59b;border-radius:8px;box-shadow:0 1px 0 rgba(120,90,40,.25),0 6px 10px -8px rgba(80,50,10,.5)}
+body[data-card=wood] .card:not(.c):not(.p){background:#b9814a repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 7px);color:#fff7e8;text-shadow:0 1px 0 rgba(0,0,0,.35);border:2px solid #85552a;border-radius:10px;box-shadow:0 2px 0 #6a4220,0 8px 12px -8px rgba(60,30,5,.7)}
+body[data-card=glass] .card:not(.c):not(.p){background:rgba(255,255,255,.38);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,.75);box-shadow:0 8px 16px -10px rgba(40,30,70,.5)}
+body[data-card=pastel] .card:not(.c):not(.p){background:linear-gradient(145deg,#ffe3ec,#e3efff);color:#4a3a55;border:1.5px solid rgba(160,120,190,.45);box-shadow:0 6px 12px -8px rgba(120,80,140,.5)}
+body[data-card=bold] .card:not(.c):not(.p){background:#fff;color:#1b1522;border:3px solid #1b1522;border-radius:12px;box-shadow:3px 3px 0 #1b1522}
+body[data-card] .card.locked:not(.c):not(.p){filter:brightness(.94) saturate(.92)}
+body[data-card] .card.sel:not(.c):not(.p){background:linear-gradient(145deg,var(--acc),var(--acc2));color:#fff;text-shadow:none;border-color:transparent;box-shadow:0 16px 26px -10px var(--acc)}
+body[data-card=glass] .card.p,body[data-card=bold] .card.p,body[data-card=wood] .card.p,body[data-card=paper] .card.p{border-radius:14px}
+body[data-card=bold] .card.p,body[data-card=bold] .card.c{border:3px solid #1b1522;box-shadow:3px 3px 0 #1b1522}
+body[data-card=wood] .card.p{box-shadow:0 2px 0 #7b4f26,0 8px 12px -8px rgba(60,30,5,.7)}
+.tsec{margin:14px 0 4px;text-align:left}.tsec h3{margin:0 0 8px;font-size:calc(15px*var(--fs));font-weight:900;color:var(--soft);letter-spacing:.06em;text-transform:uppercase}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tchip{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:16px;background:var(--card);box-shadow:var(--shadow);font-size:calc(12px*var(--fs));border:2px solid transparent;min-width:0}
+.tchip b{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tchip small{margin:0;font-size:calc(10px*var(--fs));font-weight:800;color:var(--soft)}
+.tchip.sel{border-color:var(--acc)}
+.tchip .tsw{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;border:1px solid var(--line)}
+.tchip .temo{font-size:22px;background:var(--card2)}
+.tcard{font-weight:900;font-size:16px;background:#fff;color:#2d2433}
+.tcard[data-c=paper]{background:#fbf5e6 repeating-linear-gradient(0deg,rgba(120,90,40,.06) 0 1px,transparent 1px 3px);color:#4a3a22;border-radius:6px!important}
+.tcard[data-c=wood]{background:#b9814a repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 2px,transparent 2px 7px);color:#fff7e8}
+.tcard[data-c=glass]{background:rgba(180,200,255,.35);border:1.5px solid rgba(255,255,255,.9)}
+.tcard[data-c=pastel]{background:linear-gradient(145deg,#ffe3ec,#e3efff);color:#4a3a55}
+.tcard[data-c=bold]{background:#fff;color:#1b1522;border:3px solid #1b1522!important}
+.stg{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0}
+.stile{background:var(--card);border-radius:18px;padding:12px 4px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px}
+.stile b{font-size:calc(26px*var(--fs));font-weight:900;color:var(--acc);line-height:1.1}
+.stile span{font-size:calc(11px*var(--fs));font-weight:800;color:var(--soft)}
+.sbars{text-align:left;margin:6px 0 4px}.sbars h3{margin:0 0 8px;font-size:calc(14px*var(--fs));font-weight:900;color:var(--soft);letter-spacing:.06em;text-transform:uppercase}
+.sbar{display:grid;grid-template-columns:96px 1fr 28px;align-items:center;gap:8px;margin:5px 0;font-size:calc(13px*var(--fs));font-weight:800}
+.sbar i{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.sbar u{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:4px}
+.sbar em{font-style:normal;text-align:right;color:var(--soft)}
+textarea.hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 35%,transparent)}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 @keyframes bump{40%{transform:scale(1.07)}}
@@ -270,6 +320,7 @@ body.is-dragging *{cursor:grabbing!important}
 </style>
 </head>
 <body data-mode="words">
+<canvas id="fx"></canvas>
 <div id="app">
   <header class="top">
     <button id="bMenu" class="ib" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -287,18 +338,18 @@ body.is-dragging *{cursor:grabbing!important}
 </div>
 <div id="toast"></div>
 <div id="modal"></div>
-<script src="bank.js?v=202610192043"></script>
-<script src="bank_colors.js?v=202610192043"></script>
-<script src="bank_pics.js?v=202610192043"></script>
-<script src="bank_nums.js?v=202610192043"></script>
-<script src="bank_decades.js?v=202610192043"></script>
-<script src="bank_wordplay.js?v=202610192043"></script>
-<script src="bank_bible.js?v=202610192043"></script>
-<script src="bank_foods.js?v=202610192043"></script>
-<script src="bank_states.js?v=202610192043"></script>
-<script src="bank_flowers.js?v=202610192043"></script>
-<script src="bank_birds.js?v=202610192043"></script>
-<script src="bank_places.js?v=202610192043"></script>
-<script src="game.js?v=202610192043"></script>
+<script src="bank.js?v=202610192049"></script>
+<script src="bank_colors.js?v=202610192049"></script>
+<script src="bank_pics.js?v=202610192049"></script>
+<script src="bank_nums.js?v=202610192049"></script>
+<script src="bank_decades.js?v=202610192049"></script>
+<script src="bank_wordplay.js?v=202610192049"></script>
+<script src="bank_bible.js?v=202610192049"></script>
+<script src="bank_foods.js?v=202610192049"></script>
+<script src="bank_states.js?v=202610192049"></script>
+<script src="bank_flowers.js?v=202610192049"></script>
+<script src="bank_birds.js?v=202610192049"></script>
+<script src="bank_places.js?v=202610192049"></script>
+<script src="game.js?v=202610192049"></script>
 </body>
 </html>
