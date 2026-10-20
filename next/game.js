@@ -3,7 +3,7 @@
 (function () {
 'use strict';
 var MODES = {
-  words:  { name: 'Words',    bank: window.BANK,  blurb: 'Sort words into hidden groups' },
+  words:  { name: 'Words',    bank: window.BANK,  blurb: 'Sort words into groups' },
   colors: { name: 'Colors',   bank: window.CBANK, blurb: 'Sort shades into color families' },
   pics:   { name: 'Pictures', bank: window.PBANK, blurb: 'Sort pictures into groups' }
 };
@@ -399,7 +399,7 @@ function coachInfo() {
   if (S.style === 'grid') return null;
   if (P.coachDone && !(S.bye && Date.now() < S.bye)) return null;
   if (S.daily) return null;
-  if (S.bye && Date.now() < S.bye) return { msg: 'Group complete! Its name is revealed. Keep going until every box is full.' };
+  if (S.bye && Date.now() < S.bye) return { msg: 'Group complete! Keep going until every box is full.' };
   var started = S.slots.some(function (s) { return s.ids.length; });
   if (!S.sel && !started) { var e = ends().filter(function (x) { return x.from === 'col'; })[0]; return { msg: 'Step 1: Tap a card at the BOTTOM of any column.', card: e && e.id }; }
   if (S.sel && !started) return { msg: 'Step 2: Now tap an empty box at the top to put the card there.', slot: 0 };
@@ -410,6 +410,18 @@ function coachInfo() {
 
 function captureRects() { var m = {}; document.querySelectorAll('#cols [data-id]').forEach(function (el) { m[el.getAttribute('data-id')] = el.getBoundingClientRect(); }); return m; }
 
+// the line of group names above the boxes (Settings can hide it for a harder game)
+function showGroups() { return P.showGroups !== false; }
+function renderClue() {
+  var cl = $('clue');
+  if (!showGroups()) { cl.classList.remove('on'); cl.innerHTML = ''; return; }
+  var ord = S.lv.cats.map(function (c, i) { return i; }).sort(function (a, b) { return S.lv.cats[a] < S.lv.cats[b] ? -1 : 1; });
+  cl.innerHTML = '<b class="cl">Find these groups</b>' + ord.map(function (i) {
+    var pal = PAL[i % PAL.length], inBox = S.style !== 'grid' && S.slots.some(function (x) { return !x.done && x.ids.length && x.cat === i; }), f = isFound(i);
+    return '<span class="cg' + (f ? ' on' : inBox ? ' cur' : '') + '" style="--c1:' + pal[0] + ';--c2:' + pal[1] + '">' + (f ? '✓ ' : '') + esc(S.lv.cats[i]) + '</span>';
+  }).join('');
+  cl.classList.add('on');
+}
 function render() {
   if (!S) return;
   var before = captureRects();
@@ -427,7 +439,7 @@ function render() {
   $('stars').style.display = $('miss').style.display = P.zen ? 'none' : '';
   $('hintBadge').textContent = S.hints > 0 ? S.hints : '+3';
   $('hintLbl').textContent = S.hints > 0 ? 'Hint' : 'More hints';
-  setBar();
+  setBar(); renderClue();
   if (S.style === 'grid') { renderGrid(); persistCur(); return; }
   var cb = $('coach');
   if (co) { cb.innerHTML = esc(co.msg) + ' <a data-act="coachoff">Hide tips</a>'; cb.classList.add('on'); } else cb.classList.remove('on');
@@ -437,7 +449,7 @@ function render() {
     var pal = s.cat >= 0 ? PAL[s.cat % PAL.length] : ['#cdbfae', '#cdbfae'];
     var hit = (h && h.slot === i) || (co && co.slot === i);
     html += '<div class="slot' + (s.done ? ' done' : s.ids.length ? ' started' : ' empty') + (hit ? ' hint' : '') + (S.sel && !s.done ? ' target' : '') + (S.bump === i ? ' bump' : '') + '" data-slot="' + i + '" style="--c1:' + pal[0] + ';--c2:' + pal[1] + '">';
-    html += '<div class="sh">' + (s.done ? CHECK + esc(S.lv.cats[s.cat]) : s.ids.length ? 'Group ' + s.ids.length + '/' + S.lv.per : 'Empty') + '</div>';
+    html += '<div class="sh">' + (s.done ? CHECK + esc(S.lv.cats[s.cat]) : s.ids.length ? (showGroups() ? esc(S.lv.cats[s.cat]) + ' · ' : 'Group ') + s.ids.length + '/' + S.lv.per : 'Empty') + '</div>';
     s.ids.forEach(function (id, k) {
       var last = k === s.ids.length - 1 && !s.done;
       html += '<div class="sw' + (last && sid === id ? ' sel' : '') + '"' + (last ? ' data-top="1"' : '') + '>' + slotItem(id) + '</div>';
@@ -966,7 +978,7 @@ function levels() {
   modal(h + '</div><div class="row"><button data-act="menu">Back</button></div>');
 }
 function how() {
-  modal('<h2>How to play</h2><ol class="how"><li>The cards belong to <b>hidden groups</b> (like Fruits, or Blues).</li>' +
+  modal('<h2>How to play</h2><ol class="how"><li>The cards belong to <b>groups</b>. The group names for each level are listed at the top (like Fruits, or Blues).</li>' +
     '<li>You can only use the <b>bottom card</b> of each column. Tap it, then tap a box at the top.</li>' +
     '<li>An empty box takes any card. After that, only cards from the <b>same group</b> fit. A wrong try is a <b>miss</b>.</li>' +
     '<li>Fill a box to reveal its name and clear the cards.</li>' +
@@ -975,11 +987,12 @@ function how() {
     '<div class="row"><button class="pri" data-act="resume">Got it</button></div>');
 }
 function welcome() {
-  modal('<h2>Welcome to Alikeberry</h2><p class="sub" style="font-size:18px">Sort the cards into hidden groups. I will show you how in the first level, one step at a time.</p><div class="row"><button class="pri" data-act="resume">Start</button></div>');
+  modal('<h2>Welcome to Alikeberry</h2><p class="sub" style="font-size:18px">Sort the cards into the groups listed at the top. I will show you how in the first level, one step at a time.</p><div class="row"><button class="pri" data-act="resume">Start</button></div>');
 }
 function settings() {
   modal('<h2>Settings</h2><div class="grid1"><button data-act="fs">Text size: ' + ['Medium', 'Large', 'Extra large'][[1, 1.15, 1.3].indexOf(P.fs)] + '</button>' +
     '<button data-act="snd">Sound: ' + (P.sound ? 'On' : 'Off') + '</button>' +
+    '<button data-act="groups">Group names: ' + (showGroups() ? 'Shown' : 'Hidden (harder)') + '</button>' +
     '<button data-act="hidebible">Bible mode: ' + (P.hideBible ? 'Hidden' : 'Shown') + '</button>' +
     '<button data-act="packsnd">Theme sounds: ' + (P.packSound !== false ? 'On' : 'Off') + '</button>' +
     '<button data-act="zen">Zen mode: ' + (P.zen ? 'On (no stars or miss count)' : 'Off') + '</button>' +
@@ -1132,6 +1145,7 @@ function act(a, el) {
   else if (a === 'fs') { P.fs = P.fs === 1 ? 1.15 : P.fs === 1.15 ? 1.3 : 1; saveP(); applyFs(); settings(); render(); }
   else if (a === 'snd') { P.sound = !P.sound; saveP(); settings(); }
   else if (a === 'hidebible') { P.hideBible = !P.hideBible; saveP(); if (P.hideBible && S && S.mode === 'bible') { startLevel(P.curs.words || 1, { mode: 'words' }); } settings(); }
+  else if (a === 'groups') { P.showGroups = !showGroups(); saveP(); log('groups_switch', { on: P.showGroups ? 1 : 0 }); settings(); render(); }
   else if (a === 'zen') { P.zen = !P.zen; saveP(); settings(); render(); }
   else if (a === 'restart') { closeModal(); restartCur(); }
   else if (a === 'style') { P.style = P.style === 'grid' ? 'solitaire' : 'grid'; saveP(); log('style_switch', { to: P.style }); closeModal(); restartCur(); }
