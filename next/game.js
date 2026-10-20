@@ -173,7 +173,7 @@ function makeLevel(n, seed, over, mode) {
 
 // ---------- state ----------
 var S = null, hist = [];
-function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true } }; }
+function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }, packSound: true }; }
 var P = store('dw_prog') || defaults();
 (function migrate() { // from the first test version
   var d = defaults();
@@ -610,6 +610,28 @@ var TH = {
   season: { label: 'Seasons', items: [
     ['none', 'None', 1, '∅'], ['spring', 'Spring', 0, '🌸'], ['summer', 'Summer', 0, '✨'], ['fall', 'Fall', 1, '🍂'], ['winter', 'Winter', 0, '❄️'] ] }
 };
+var PACKS = [
+  { id: 'blossom', name: 'Cherry Blossom Garden', free: 1, tone: 'light', card: 'paper', fx: 'packblossom', snd: 'audio/piano2.mp3', blurb: 'Drifting petals and soft piano' },
+  { id: 'harvest', name: 'Autumn Harvest', free: 1, tone: 'light', card: 'wood', fx: 'packharvest', snd: 'audio/piano5.mp3', blurb: 'Golden leaves and gentle piano' },
+  { id: 'beach', name: 'Beach Day', free: 0, tone: 'light', card: 'pastel', fx: 'packbeach', snd: 'audio/beach.mp3', blurb: 'Sunrise, sparkles and ocean waves' },
+  { id: 'cabin', name: 'Cozy Cabin', free: 0, tone: 'dark', card: 'wood', fx: 'packcabin', snd: 'audio/fire.mp3', blurb: 'Snow outside, a crackling fire' },
+  { id: 'rainy', name: 'Rainy Day', free: 0, tone: 'dark', card: 'glass', fx: 'packrainy', snd: 'audio/rain.mp3', blurb: 'Rain on the window' },
+  { id: 'starry', name: 'Starry Night', free: 0, tone: 'dark', card: 'glass', fx: 'packstarry', snd: 'audio/piano4.mp3', blurb: 'Twinkling stars and calm piano' }
+];
+function packOf(id) { for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) return PACKS[i]; return null; }
+// ambient sound for a pack (looping, quiet, starts after your first tap because phones block sound before that)
+var SND = { want: '', a: null, cur: '', vol: 0.35 };
+function soundSync() {
+  if (SND.a && SND.cur !== SND.want) { var old = SND.a; SND.a = null; SND.cur = ''; var v = old.volume, iv = setInterval(function () { v = Math.max(0, v - 0.05); old.volume = v; if (v <= 0) { clearInterval(iv); old.pause(); } }, 50); }
+  if (SND.want && !SND.a) {
+    var a = new Audio(SND.want); a.loop = true; a.volume = 0; SND.a = a; SND.cur = SND.want;
+    var pr = a.play(); if (pr && pr.catch) pr.catch(function () { });
+    var vv = 0, iv2 = setInterval(function () { vv = Math.min(SND.vol, vv + 0.03); a.volume = vv; if (vv >= SND.vol) clearInterval(iv2); }, 60);
+  }
+}
+function soundSet(path) { SND.want = (P.packSound !== false && path) ? path : ''; soundSync(); }
+function soundResume() { if (SND.a && SND.a.paused && SND.want && !document.hidden) { var pr = SND.a.play(); if (pr && pr.catch) pr.catch(function () { }); } }
+document.addEventListener('visibilitychange', function () { if (document.hidden) { if (SND.a) SND.a.pause(); } else soundResume(); });
 var DARKBG = { night: 1 };
 var DARKHOL = { july4: 1, halloween: 1, christmas: 1, newyear: 1 };
 var HOLNAME = { christmas: 'Christmas', halloween: 'Halloween', thanksgiving: 'Thanksgiving', july4: 'the 4th of July', valentine: 'Valentine’s Day', stpat: 'St. Patrick’s Day', easter: 'Easter', newyear: 'New Year’s' };
@@ -631,22 +653,28 @@ function holidayNow(d) {
 function activeHoliday() {
   var t = P.theme || {};
   if (t.hol && t.hol !== 'none') return t.hol;
-  var custom = (t.bg && t.bg !== 'auto') || (t.color && t.color !== 'auto') || (t.season && t.season !== 'none');
+  var custom = (t.bg && t.bg !== 'auto') || (t.color && t.color !== 'auto') || (t.season && t.season !== 'none') || (t.pack && t.pack !== 'none');
   return (t.auto !== false && !custom) ? holidayNow() : 'none';
 }
 function applyTheme() {
   var t = P.theme || {}, b = document.body, hol = activeHoliday();
   function at(k, v, off) { if (!v || v === off) b.removeAttribute(k); else b.setAttribute(k, v); }
-  at('data-card', t.card, 'classic');
+  at('data-card', t.card, 'classic'); b.removeAttribute('data-pack');
   if (hol !== 'none') {
     b.setAttribute('data-hol', hol); b.removeAttribute('data-bg'); b.removeAttribute('data-color');
     if (DARKHOL[hol]) b.setAttribute('data-tone', 'dark'); else b.setAttribute('data-tone', 'light');
-    fxStart(hol);
+    fxStart(hol); soundSet('');
     var key = 'hol' + hol + new Date().getFullYear();
     if ((!t.hol || t.hol === 'none') && !P.seen[key]) { P.seen[key] = 1; saveP(); setTimeout(function () { toast('Happy ' + HOLNAME[hol] + '! A holiday theme is on. Change it any time in Themes.'); }, 900); }
     return;
   }
   b.removeAttribute('data-hol');
+  var pk = packOf(t.pack);
+  if (pk) {
+    b.setAttribute('data-pack', pk.id); b.removeAttribute('data-bg'); b.removeAttribute('data-color'); b.setAttribute('data-card', pk.card); b.setAttribute('data-tone', pk.tone);
+    fxStart(pk.fx); soundSet(pk.snd); return;
+  }
+  b.removeAttribute('data-pack'); soundSet('');
   at('data-bg', t.bg, 'auto'); at('data-color', t.color, 'auto');
   if (DARKBG[t.bg]) b.setAttribute('data-tone', 'dark'); else if (t.bg && t.bg !== 'auto') b.setAttribute('data-tone', 'light'); else b.removeAttribute('data-tone');
   fxStart(t.season || 'none');
@@ -655,7 +683,8 @@ function applyTheme() {
 // ----- moving decorations (one small canvas behind the game; stops when the phone asks for less motion) -----
 var FX = { id: 'none', raf: 0, parts: [], bursts: [], bats: [] };
 var FXL = { spring: [['petal', 24]], summer: [['firefly', 26]], fall: [['leaf', 22]], winter: [['snow', 44]], christmas: [['snow', 34], ['lights', 0]], valentine: [['heart', 22]], stpat: [['clover', 24]],
-  easter: [['egg', 14], ['petal', 10]], july4: [['fireworks', 0]], halloween: [['bat', 6], ['ember', 18]], thanksgiving: [['leaf', 26]], newyear: [['confetti', 46], ['fireworks', 0]] };
+  easter: [['egg', 14], ['petal', 10]], july4: [['fireworks', 0]], halloween: [['bat', 6], ['ember', 18]], thanksgiving: [['leaf', 26]], newyear: [['confetti', 46], ['fireworks', 0]],
+  packblossom: [['petal', 28]], packharvest: [['leaf', 22]], packbeach: [['star', 30, '#fff2c0']], packcabin: [['ember', 18]], packrainy: [['rain', 80]], packstarry: [['star', 56, '#ffffff']] };
 function fxStop() { cancelAnimationFrame(FX.raf); FX.raf = 0; var c = $('fx'); if (c) { var g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); } }
 function heartPath(g, x, y, s) { g.beginPath(); g.moveTo(x, y + s * 0.35); g.bezierCurveTo(x - s * 1.2, y - s * 0.4, x - s * 0.55, y - s * 1.1, x, y - s * 0.45); g.bezierCurveTo(x + s * 0.55, y - s * 1.1, x + s * 1.2, y - s * 0.4, x, y + s * 0.35); g.fill(); }
 function fxStart(id) {
@@ -664,7 +693,7 @@ function fxStart(id) {
   var g = c.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight;
   c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   var layers = FXL[id], hasFw = false, hasLights = false, PAL = ['#ff4d4d', '#ffffff', '#4da6ff', '#ffd23f', '#ff7ac8'];
-  function mk(type, init) {
+  function mk(type, init, col) {
     var p = { type: type, x: Math.random() * W, y: init ? Math.random() * H : -24, r: 2 + Math.random() * 3, vx: (Math.random() - 0.5) * 18, vy: 20 + Math.random() * 28, ph: Math.random() * 6.28, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 2.2 };
     if (type === 'firefly' || type === 'ember') { p.y = Math.random() * H; p.vy = type === 'ember' ? -(10 + Math.random() * 18) : (Math.random() - 0.5) * 16; p.vx = (Math.random() - 0.5) * 16; p.r = 2 + Math.random() * 2.5; p.col = type === 'ember' ? '255,150,50' : '255,214,90'; }
     if (type === 'leaf') { p.col = ['#d9822b', '#c0471f', '#e0a030', '#8c4a1f'][Math.floor(Math.random() * 4)]; p.r = 6 + Math.random() * 4; p.vy = 24 + Math.random() * 26; }
@@ -673,13 +702,15 @@ function fxStart(id) {
     if (type === 'heart') { p.col = ['#ff5c8a', '#ff8fb1', '#ffffff', '#ff3d71'][Math.floor(Math.random() * 4)]; p.r = 5 + Math.random() * 6; p.vy = -(14 + Math.random() * 22); p.y = init ? Math.random() * H : H + 20; }
     if (type === 'clover') { p.coin = Math.random() < 0.3; p.r = 5 + Math.random() * 4; p.vy = 18 + Math.random() * 22; }
     if (type === 'egg') { p.col = ['#ffd6e7', '#d6ecff', '#fff3b0', '#d9f5d6', '#e6d9ff'][Math.floor(Math.random() * 5)]; p.r = 8 + Math.random() * 5; p.vy = 14 + Math.random() * 16; }
+    if (type === 'rain') { p.vx = -70; p.vy = 480 + Math.random() * 240; p.y = init ? Math.random() * H : -30; p.r = 10 + Math.random() * 10; }
+    if (type === 'star') { p.vx = 0; p.vy = 0; p.y = Math.random() * H; p.r = 0.8 + Math.random() * 1.8; p.vr = 0.8 + Math.random() * 2.2; p.col = col || '#ffffff'; }
     if (type === 'confetti') { p.col = ['#f5c542', '#ffe08a', '#ffffff', '#c9c9d6', '#ff7ac8', '#7ad7ff'][Math.floor(Math.random() * 6)]; p.vy = 30 + Math.random() * 40; p.vr = (Math.random() - 0.5) * 8; }
     return p;
   }
   layers.forEach(function (L) {
     if (L[0] === 'fireworks') hasFw = true; else if (L[0] === 'lights') hasLights = true;
     else if (L[0] === 'bat') { for (var i = 0; i < L[1]; i++) FX.bats.push({ x: Math.random() * W, y: H * (0.04 + Math.random() * 0.5), vx: (Math.random() < 0.5 ? -1 : 1) * (25 + Math.random() * 30), s: 9 + Math.random() * 7, ph: Math.random() * 6.28 }); }
-    else for (var j = 0; j < L[1]; j++) FX.parts.push(mk(L[0], true));
+    else for (var j = 0; j < L[1]; j++) FX.parts.push(mk(L[0], true, L[2]));
   });
   var last = 0, tt = 0, nextBurst = 0, lc = ['#ff4d4d', '#3ddc84', '#ffd23f', '#4da6ff'];
   function burst() {
@@ -692,6 +723,8 @@ function fxStart(id) {
     if (t - last < 32) return; var dt = Math.min(0.06, (t - last) / 1000); last = t; tt += dt;
     g.clearRect(0, 0, W, H);
     FX.parts.forEach(function (p) {
+      if (p.type === 'star') { p.ph += dt * p.vr; var sa = 0.15 + 0.85 * Math.abs(Math.sin(p.ph)); g.globalAlpha = sa; g.fillStyle = p.col; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.28); g.fill(); if (p.r > 1.9) { g.fillRect(p.x - p.r * 2.2, p.y - 0.4, p.r * 4.4, 0.8); g.fillRect(p.x - 0.4, p.y - p.r * 2.2, 0.8, p.r * 4.4); } g.globalAlpha = 1; return; }
+      if (p.type === 'rain') { p.x += p.vx * dt; p.y += p.vy * dt; g.strokeStyle = 'rgba(205,222,255,.45)'; g.lineWidth = 1.1; g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x + p.vx * 0.022, p.y + p.vy * 0.022); g.stroke(); if (p.y > H + 20 || p.x < -20) { p.x = Math.random() * (W + 80); p.y = -20; } return; }
       p.ph += dt * 1.6; p.x += (p.vx + Math.sin(p.ph) * 14) * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
       var ty = p.type;
       if (ty === 'firefly' || ty === 'ember') {
@@ -752,6 +785,9 @@ function themeChip(k, it) {
 }
 function themes() {
   var auto = P.theme.auto !== false, h = '<h2>Themes</h2><p class="sub">Try anything. In this preview everything is free; in the full game the ones marked Paid cost a little.</p>';
+  h += '<div class="tsec"><h3>Theme packs</h3><p class="tnote">A painted scene, matching cards, moving details and calm sounds.</p><div class="pkgrid">' +
+    '<button class="pk' + (P.theme.pack === 'none' ? ' sel' : '') + ' pknone" data-act="pack" data-v="none"><b>No pack</b></button>' +
+    PACKS.map(function (p) { return '<button class="pk' + (P.theme.pack === p.id ? ' sel' : '') + '" data-act="pack" data-v="' + p.id + '" style="background-image:linear-gradient(transparent 35%,rgba(0,0,0,.62)),url(packs/' + p.id + '.webp)"><span class="pkt">' + (p.free ? 'Free' : 'Paid') + '</span><b>' + esc(p.name) + '</b><small>\uD83D\uDD0A ' + esc(p.blurb) + '</small></button>'; }).join('') + '</div></div>';
   Object.keys(TH).forEach(function (k) {
     h += '<div class="tsec"><h3>' + TH[k].label + '</h3><div class="tgrid">' + TH[k].items.map(function (it) { return themeChip(k, it); }).join('') + '</div>' +
       (k === 'hol' ? '<button class="tauto" data-act="holauto">Switch on by itself during each holiday: <b>' + (auto ? 'On' : 'Off') + '</b></button>' : '') + '</div>';
@@ -843,6 +879,7 @@ function settings() {
   modal('<h2>Settings</h2><div class="grid1"><button data-act="fs">Text size: ' + ['Medium', 'Large', 'Extra large'][[1, 1.15, 1.3].indexOf(P.fs)] + '</button>' +
     '<button data-act="snd">Sound: ' + (P.sound ? 'On' : 'Off') + '</button>' +
     '<button data-act="hidebible">Bible mode: ' + (P.hideBible ? 'Hidden' : 'Shown') + '</button>' +
+    '<button data-act="packsnd">Theme sounds: ' + (P.packSound !== false ? 'On' : 'Off') + '</button>' +
     '<button data-act="zen">Zen mode: ' + (P.zen ? 'On (no stars or miss count)' : 'Off') + '</button>' +
     '<button data-act="restart">Restart this level</button>' +
     '<button data-act="tipson">Show first-level tips again</button>' +
@@ -873,7 +910,7 @@ function stats() {
 
 // ---------- sound ----------
 var ac = null;
-function unlock() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
+function unlock() { soundResume(); try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { } }
 function tone(f, d, t0, type, v) { if (!ac || !P.sound) return; var o = ac.createOscillator(), g = ac.createGain(); o.type = type || 'sine'; o.frequency.value = f; var t = ac.currentTime + (t0 || 0); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v || 0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + d); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d + 0.02); }
 function sfx(k) {
   if (!P.sound) return;
@@ -971,13 +1008,20 @@ function act(a, el) {
   else if (a === 'stats') stats();
   else if (a === 'modes') modes();
   else if (a === 'themes') themes();
+  else if (a === 'pack') {
+    var pv = el.getAttribute('data-v'), pk2 = packOf(pv);
+    P.theme.pack = pv; if (pv !== 'none') P.theme.hol = 'none'; saveP(); applyTheme(); log('theme_try', { k: 'pack', v: pv, paid: pk2 && !pk2.free ? 1 : 0 });
+    document.querySelectorAll('.pk').forEach(function (c) { c.classList.toggle('sel', c === el); });
+    if (pk2 && !pk2.free) toast('Free to try now. In the full game this pack is $1.99 (all packs $3.99).');
+  }
+  else if (a === 'packsnd') { P.packSound = !P.packSound; saveP(); applyTheme(); settings(); }
   else if (a === 'theme') {
     var tk = el.getAttribute('data-k'), tv = el.getAttribute('data-v'), item = TH[tk].items.filter(function (x) { return x[0] === tv; })[0];
     P.theme[tk] = tv; if (tk === 'hol' && tv === 'none') P.theme.auto = false; saveP(); applyTheme(); log('theme_try', { k: tk, v: tv, paid: item[2] ? 0 : 1 });
     document.querySelectorAll('.tchip[data-k="' + tk + '"]').forEach(function (c) { c.classList.toggle('sel', c === el); });
     if (!item[2]) toast('Free to try now. In the full game this one is a small paid extra.');
   }
-  else if (a === 'themereset') { P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true }; saveP(); applyTheme(); themes(); }
+  else if (a === 'themereset') { P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }; saveP(); applyTheme(); themes(); }
   else if (a === 'holauto') { P.theme.auto = P.theme.auto === false; saveP(); applyTheme(); themes(); }
   else if (a === 'mode') { var m = el.getAttribute('data-m'); log('mode_switch', { to: m }); startLevel(P.curs[m] || 1, { mode: m }); }
   else if (a === 'daily') { var dm = dailyMode(); startLevel(45, { daily: true, seed: +dstr().replace(/-/g, ''), cfg: DCFG, mode: dm }); }
@@ -1006,7 +1050,7 @@ $('bRestart').onclick = function () { if (!S || S.won) return; if (S.style === '
 window.addEventListener('resize', render);
 function applyFs() { document.documentElement.style.setProperty('--fs', P.fs); }
 applyFs();
-P.theme = Object.assign({ bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true }, P.theme || {}); if (P.theme.season === 'holiday') P.theme.season = 'none';
+P.theme = Object.assign({ bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }, P.theme || {}); if (P.packSound === undefined) P.packSound = true; if (P.theme.season === 'holiday') P.theme.season = 'none';
 applyTheme();
 
 // ---------- start ----------

@@ -319,6 +319,23 @@ body[data-hol=newyear]{--bg1:#16151f;--bg2:#08080e;--blob1:#6b5416;--blob2:#2a2a
 .tauto{display:block;width:100%;margin-top:8px;padding:10px 12px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-size:calc(13px*var(--fs));font-weight:700;text-align:left}
 .tauto b{color:var(--acc)}
 .tgrid .tchip small{white-space:nowrap}
+.tnote{margin:-4px 0 8px;font-size:calc(12px*var(--fs));color:var(--soft);font-weight:700}
+.pkgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pk{position:relative;height:118px;border-radius:18px;background-size:cover;background-position:center;color:#fff;text-align:left;padding:10px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;border:3px solid transparent;box-shadow:var(--shadow);overflow:hidden}
+.pk b{font-size:calc(14px*var(--fs));font-weight:900;text-shadow:0 1px 3px rgba(0,0,0,.6);line-height:1.15}
+.pk small{font-size:calc(10.5px*var(--fs));font-weight:700;opacity:.92;text-shadow:0 1px 2px rgba(0,0,0,.6);line-height:1.2}
+.pk .pkt{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.45);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:900}
+.pk.sel{border-color:var(--acc)}
+.pk.pknone{background:var(--card);color:var(--ink);justify-content:center;align-items:center;text-align:center}
+.pk.pknone b{text-shadow:none}
+body[data-pack]::before,body[data-pack]::after{display:none}
+body[data-pack]{background-size:cover;background-position:center;background-attachment:fixed;background-repeat:no-repeat}
+body[data-pack=blossom]{background-image:linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.1)),url(packs/blossom.webp);--acc:#d6457f;--acc2:#f28fb6}
+body[data-pack=harvest]{background-image:linear-gradient(rgba(255,248,235,.2),rgba(255,240,220,.08)),url(packs/harvest.webp);--acc:#d9731f;--acc2:#f2a541}
+body[data-pack=beach]{background-image:linear-gradient(rgba(255,255,255,.2),rgba(255,255,255,.08)),url(packs/beach.webp);--acc:#1f9fb0;--acc2:#5cd0d6}
+body[data-pack=cabin]{background-image:linear-gradient(rgba(15,8,5,.32),rgba(15,8,5,.5)),url(packs/cabin.webp);--acc:#e0802b;--acc2:#f6b24e}
+body[data-pack=rainy]{background-image:linear-gradient(rgba(10,15,30,.3),rgba(10,15,30,.5)),url(packs/rainy.webp);--acc:#5b8fd6;--acc2:#8fc0f0}
+body[data-pack=starry]{background-image:linear-gradient(rgba(5,5,25,.2),rgba(5,5,25,.4)),url(packs/starry.webp);--acc:#7b82ff;--acc2:#b8a2ff}
 textarea.hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 35%,transparent)}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
@@ -349,18 +366,18 @@ textarea.hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 </div>
 <div id="toast"></div>
 <div id="modal"></div>
-<script src="bank.js?v=202610192056"></script>
-<script src="bank_colors.js?v=202610192056"></script>
-<script src="bank_pics.js?v=202610192056"></script>
-<script src="bank_nums.js?v=202610192056"></script>
-<script src="bank_decades.js?v=202610192056"></script>
-<script src="bank_wordplay.js?v=202610192056"></script>
-<script src="bank_bible.js?v=202610192056"></script>
-<script src="bank_foods.js?v=202610192056"></script>
-<script src="bank_states.js?v=202610192056"></script>
-<script src="bank_flowers.js?v=202610192056"></script>
-<script src="bank_birds.js?v=202610192056"></script>
-<script src="bank_places.js?v=202610192056"></script>
-<script src="game.js?v=202610192056"></script>
+<script src="bank.js?v=202610192110"></script>
+<script src="bank_colors.js?v=202610192110"></script>
+<script src="bank_pics.js?v=202610192110"></script>
+<script src="bank_nums.js?v=202610192110"></script>
+<script src="bank_decades.js?v=202610192110"></script>
+<script src="bank_wordplay.js?v=202610192110"></script>
+<script src="bank_bible.js?v=202610192110"></script>
+<script src="bank_foods.js?v=202610192110"></script>
+<script src="bank_states.js?v=202610192110"></script>
+<script src="bank_flowers.js?v=202610192110"></script>
+<script src="bank_birds.js?v=202610192110"></script>
+<script src="bank_places.js?v=202610192110"></script>
+<script src="game.js?v=202610192110"></script>
 </body>
 </html>
