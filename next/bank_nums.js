@@ -32,7 +32,7 @@ window.NBANK = (function () {
     ['n-prime', 'Prime numbers', primes, 3],
     ['n-m7', 'Multiples of 7', R(7, 98, 7), 3],
     ['n-m9', 'Multiples of 9', R(9, 99, 9), 3],
-    ['n-p2', 'Powers of 2', ['2', '4', '8', '16', '32', '64'], 3],
+    ['n-p2', 'Doubling numbers', ['2', '4', '8', '16', '32', '64'], 3],
     ['n-tri', 'Triangular numbers', tri, 3],
     ['n-fib', 'Fibonacci numbers', ['1', '2', '3', '5', '8', '13', '21', '34', '55', '89'], 3],
     ['n-cube', 'Cube numbers', cu, 3]

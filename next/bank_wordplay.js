@@ -2,13 +2,13 @@
 // word that also fits another kind's rule is listed in both lists (checked by tools/check_wordplay.js).
 window.WBANK = [
 // rhymes (kind "rhyme")
-["rhyme","Rhymes with CAT","bat hat mat rat sat flat chat that pat fat vat brat",1],
+["rhyme","Rhymes with CAT","bat hat mat rat sat flat chat that pat spat vat brat",1],
 ["rhyme","Rhymes with BEE","tree sea key free knee flea ski tea three",1],
 ["rhyme","Rhymes with LIGHT","night fight kite bite right white flight sight height tight write",1],
 ["rhyme","Rhymes with CAKE","lake bake snake shake brake steak make wake rake flake snowflake",1],
 ["rhyme","Rhymes with BALL","wall tall fall call small hall mall crawl football baseball basketball snowball meatball eyeball fireball",1],
 ["rhyme","Rhymes with DAY","hay way play gray may say stay tray sleigh weigh",2],
-["rhyme","Rhymes with LOW","toe snow row go show grow slow flow throw crow dough",2],
+["rhyme","Rhymes with LOW","toe blow mow go show grow slow flow throw crow dough",2],
 ["rhyme","Rhymes with TRAIN","rain plane brain chain lane pain cane vein",2],
 // how a word starts (kind "start")
 ["start","Start with ST","star stone story stamp storm stick stem steam stove stairs stay steak",1],
@@ -29,6 +29,6 @@ window.WBANK = [
 ["comp","Words ending in HOUSE","greenhouse lighthouse farmhouse doghouse treehouse warehouse birdhouse",2],
 // spelling (kind "spell")
 ["spell","Double letters","coffee balloon button summer happy kitten ladder apple tennis bubble carrot knee tree free wall tall fall call small hall mall football baseball basketball snowball meatball eyeball fireball greenhouse firewood waterproof treehouse sheep cheese broom noon three cherry shell sunglasses waterwheel",2],
-["spell","Silent letters","knee knife write gnome wrist lamb comb island listen castle hour night fight right sight height tight flight thumb chalk thistle lighthouse white sleigh weigh dough",2],
+["spell","Silent letters (not E)","knee knife write gnome wrist lamb comb island listen castle hour night fight right sight height tight flight thumb chalk thistle lighthouse white sleigh weigh dough",2],
 ["spell","Palindromes","level radar kayak civic madam racecar noon refer",2]
 ].map(function (r) { return { g: r[0], name: r[1], words: r[2].split(" "), tier: r[3] }; });

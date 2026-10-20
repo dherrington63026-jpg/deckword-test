@@ -1,4 +1,4 @@
-// Alikeberry test version: group-sorting solitaire with many modes.
+// Alikeberry: group-sorting solitaire with many modes.
 // No ads, no real purchases. Everything saves on this phone only.
 (function () {
 'use strict';
@@ -66,7 +66,7 @@ var LABELS = { icecream: 'Ice cream', bubbletea: 'Bubble tea', misosoup: 'Miso s
   eiffel: 'Eiffel Tower', bigben: 'Big Ben', pisa: 'Leaning Tower', towerbridge: 'Tower Bridge', brandenburg: 'Brandenburg Gate', sagrada: 'Sagrada Familia', tajmahal: 'Taj Mahal', greatwall: 'Great Wall',
   fuji: 'Mount Fuji', angkorwat: 'Angkor Wat', forbiddencity: 'Forbidden City', burjkhalifa: 'Burj Khalifa', halong: 'Ha Long Bay', liberty: 'Statue of Liberty', goldengate: 'Golden Gate', rushmore: 'Mount Rushmore',
   niagara: 'Niagara Falls', grandcanyon: 'Grand Canyon', whitehouse: 'White House', empire: 'Empire State', spaceneedle: 'Space Needle', gatewayarch: 'Gateway Arch', brooklyn: 'Brooklyn Bridge', chichen: 'Chichen Itza',
-  cntower: 'CN Tower', christ: 'Christ Redeemer', machu: 'Machu Picchu', iguazu: 'Iguazu Falls', pyramids: 'Pyramids', victoria: 'Victoria Falls', tablemountain: 'Table Mountain', opera: 'Sydney Opera', harbourbridge: 'Harbour Bridge' };
+  cntower: 'CN Tower', christ: 'Christ Redeemer', machu: 'Machu Picchu', iguazu: 'Iguazu Falls', pyramids: 'Pyramids', victoria: 'Victoria Falls', tablemountain: 'Table Mountain', sydneyopera: 'Sydney Opera', butterchicken: 'Butter chicken', newyear: 'New Year', valentine: 'Valentine’s Day', flipflops: 'Flip-flops', harbourbridge: 'Harbour Bridge' };
 function cmode(id) { return S.lv.cards[id].m || S.mode; }
 function label(id) { var w = S.lv.cards[id].w; return LABELS[w] || disp(w); }
 function stateSvg(w, size) {
@@ -173,7 +173,7 @@ function makeLevel(n, seed, over, mode) {
 
 // ---------- state ----------
 var S = null, hist = [];
-function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }, packSound: true }; }
+function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {}, style: 'solitaire', zen: false, theme: { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }, packSound: true, own: {} }; }
 var P = store('dw_prog') || defaults();
 (function migrate() { // from the first test version
   var d = defaults();
@@ -203,6 +203,7 @@ var DCFG = { cats: 4, per: 5, tricks: 1, tier: 3, gap: 1 };
 function startLevel(n, opts) {
   opts = opts || {};
   var mode = opts.mode || P.mode;
+  if (!opts.daily && levelLocked(mode, n)) { if (!S) startLevel(FREELEVELS, { mode: mode }); lockModes(mode, n); return; }
   var seed = opts.seed || (n * 7919 + 13 + MORDER.indexOf(mode) * 100003);
   var lv = makeLevel(n, seed, opts.cfg, mode);
   document.querySelectorAll('.ghost,.drag-ghost').forEach(function (e) { e.remove(); });
@@ -594,7 +595,7 @@ function shareResult() {
 
 
 // ---------- themes: holidays, backgrounds, colors, card styles, seasons ----------
-// item = [id, label, free?, swatch]. In this preview everything can be tried; "paid" ones are counted so we learn what people like.
+// item = [id, label, free?, swatch]. Paid ones come with the Every Theme purchase; holidays are always free.
 var TH = {
   hol: { label: 'Holidays', items: [
     ['none', 'None', 1, '∅'], ['christmas', 'Christmas', 1, '🎄'], ['halloween', 'Halloween', 1, '🎃'], ['thanksgiving', 'Thanksgiving', 1, '🦃'],
@@ -619,6 +620,107 @@ var PACKS = [
   { id: 'starry', name: 'Starry Night', free: 0, tone: 'dark', card: 'glass', fx: 'packstarry', snd: 'audio/piano4.mp3', blurb: 'Twinkling stars and calm piano' }
 ];
 function packOf(id) { for (var i = 0; i < PACKS.length; i++) if (PACKS[i].id === id) return PACKS[i]; return null; }
+
+// ---------- purchases ----------
+// In the app, the store bridge (RevenueCat) sets window.ABStore = { buy(id), restore(), owned(), prices() }, each a Promise
+// (buy/restore/owned give the list of product ids the player owns, without the store's 'alikeberry_' prefix; prices gives { id: '$x.xx' } in the player's currency).
+// What is saved on the phone is only a copy: the app asks the store again every time it starts.
+// The web test version has no store, so it offers a clearly labeled free test unlock instead.
+var PRODUCTS = { remove_ads: ['Remove Ads', '$3.99'], all_modes: ['All Modes', '$4.99'], bundle: ['Ad-free + All Modes', '$7.99'],
+  theme_beach: ['Beach Day', '$1.99'], theme_cabin: ['Cozy Cabin', '$1.99'], theme_rainy: ['Rainy Day', '$1.99'], theme_starry: ['Starry Night', '$1.99'], themes_all: ['Every Theme', '$3.99'] };
+var FREEMODES = { words: 1, colors: 1, nums: 1 }, FREELEVELS = 20;
+var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+var SHOP = { prices: {}, busy: false, after: null };
+function owns(id) { return !!(P.own && P.own[id]); }
+function hasAdFree() { return owns('remove_ads') || owns('bundle'); }
+function hasModes() { return owns('all_modes') || owns('bundle'); }
+function hasPack(id) { var p = packOf(id); return !p || !!p.free || owns('themes_all') || owns('theme_' + id); }
+function hasTheme(k, it) { return k === 'hol' || !!it[2] || owns('themes_all'); }
+function levelLocked(m, n) { return !FREEMODES[m] && n > FREELEVELS && !hasModes(); }
+function price(id) { return SHOP.prices[id] || PRODUCTS[id][1]; }
+function setOwned(ids, replace) { if (replace || !P.own) P.own = {}; (ids || []).forEach(function (i) { if (PRODUCTS[i]) P.own[i] = 1; }); saveP(); }
+// drop a paid look the player does not own (for example after a refund)
+function themeCheck() {
+  var t = P.theme, d = { bg: 'auto', color: 'auto', card: 'classic', season: 'none' };
+  if (!hasPack(t.pack)) t.pack = 'none';
+  Object.keys(d).forEach(function (k) { var it = TH[k].items.filter(function (x) { return x[0] === t[k]; })[0]; if (!it || !hasTheme(k, it)) t[k] = d[k]; });
+  saveP();
+}
+function storeSync() {
+  if (!window.ABStore) return;
+  window.ABStore.owned().then(function (ids) { setOwned(ids, true); themeCheck(); applyTheme(); }).catch(function () { });
+  if (window.ABStore.prices) window.ABStore.prices().then(function (pr) { SHOP.prices = pr || {}; }).catch(function () { });
+}
+function buy(id) {
+  if (SHOP.busy || !PRODUCTS[id]) return;
+  log('buy_tap', { id: id });
+  if (window.ABStore) {
+    SHOP.busy = true; toast('Opening the store…');
+    window.ABStore.buy(id).then(function (ids) { SHOP.busy = false; setOwned(ids, true); if (owns(id)) bought(id); else toast('Purchase not finished. You were not charged.'); })
+      .catch(function () { SHOP.busy = false; toast('Purchase not finished. You were not charged.'); });
+    return;
+  }
+  if (NATIVE) { toast('The store is not available right now. Please try again later.'); return; }
+  modal('<h2>Test version</h2><p class="sub">This web test version cannot take money. Unlock <b>' + esc(PRODUCTS[id][0]) + '</b> for free so you can try it?</p><p class="sub">In the app, this button opens the App Store or Google Play.</p>' +
+    '<div class="grid1"><button class="pri" data-act="testbuy" data-v="' + id + '">Unlock for testing</button><button data-act="resume">Cancel</button></div>');
+}
+function bought(id) {
+  log('bought', { id: id });
+  var a = SHOP.after; SHOP.after = null;
+  toast('Thank you! ' + PRODUCTS[id][0] + ' is yours.');
+  if (a && a.mode && !levelLocked(a.mode, a.n)) return startLevel(a.n, { mode: a.mode });
+  if (a && a.pack && hasPack(a.pack)) { P.theme.pack = a.pack; P.theme.hol = 'none'; saveP(); applyTheme(); return themes(); }
+  if (a && a.k) { var it = TH[a.k].items.filter(function (x) { return x[0] === a.v; })[0]; if (it && hasTheme(a.k, it)) { P.theme[a.k] = a.v; saveP(); applyTheme(); } return themes(); }
+  menu();
+}
+function restorePurchases() {
+  log('restore_tap');
+  if (window.ABStore) {
+    toast('Checking your purchases…');
+    window.ABStore.restore().then(function (ids) { setOwned(ids, true); themeCheck(); applyTheme(); restored(); }).catch(function () { toast('Could not reach the store. Check your internet and try again.'); });
+    return;
+  }
+  if (NATIVE) { toast('Could not reach the store. Check your internet and try again.'); return; }
+  restored();
+}
+function restored() {
+  var ids = Object.keys(P.own || {});
+  modal('<h2>Restore purchases</h2><p class="sub">' + (ids.length ? 'All set. You own: <b>' + ids.map(function (i) { return esc(PRODUCTS[i][0]); }).join(', ') + '</b>.' : 'No purchases were found' + (NATIVE ? ' for this store account.' : ' in this test version.')) + '</p>' +
+    '<p class="sub">Your purchases come back on any phone signed in to the same Apple ID or Google account. You never pay twice.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>');
+}
+function buyBtn(id, title, note, pri) {
+  return '<button class="buyb' + (pri ? ' pri' : '') + '" data-act="buy" data-v="' + id + '"><b>' + esc(title) + ' · ' + esc(price(id)) + '</b>' + (note ? '<small>' + note + '</small>' : '') + '</button>';
+}
+var RESTLNK = '<button class="lnk" data-act="restore">Restore purchases</button>';
+function lockModes(m, n) {
+  log('lock_modes', { n: n });
+  SHOP.after = { mode: m, n: n };
+  var paid = MORDER.filter(function (x) { return !FREEMODES[x]; }).length;
+  modal('<div class="mt lockic">' + MICON[m] + '</div><h2>Keep going in ' + MODES[m].name + '?</h2>' +
+    '<p class="sub">You have reached the end of the ' + FREELEVELS + ' free levels. One purchase unlocks levels ' + (FREELEVELS + 1) + ' to 100 in <b>every</b> mode, for good.</p><div class="grid1">' +
+    buyBtn('all_modes', 'All Modes', paid + ' modes, ' + paid * (100 - FREELEVELS) + ' more puzzles', 1) +
+    (hasAdFree() ? '' : buyBtn('bundle', 'Ad-free + All Modes', 'Best value: every level and no ads')) +
+    '<button data-act="modes">Not now: play another mode</button>' + RESTLNK + '</div>');
+}
+function lockPack(p) {
+  log('lock_pack', { v: p.id });
+  SHOP.after = { pack: p.id };
+  modal('<div class="pkbig" style="background-image:url(packs/' + p.id + '.webp)"></div><h2>' + esc(p.name) + '</h2><p class="sub">🔊 ' + esc(p.blurb) + '. A painted scene, matching cards and moving details.</p><div class="grid1">' +
+    buyBtn('theme_' + p.id, 'Get ' + p.name, '', 1) + buyBtn('themes_all', 'Every Theme', 'All four paid packs, plus every background, color, card and season') +
+    '<button data-act="themes">Not now</button>' + RESTLNK + '</div>');
+}
+function lockTheme(k, it) {
+  log('lock_theme', { k: k, v: it[0] });
+  SHOP.after = { k: k, v: it[0] };
+  modal('<h2>' + esc(it[1]) + '</h2><p class="sub">Every background, color, card style and season, plus the four paid theme packs (Beach Day, Cozy Cabin, Rainy Day, Starry Night), with one purchase.</p><div class="grid1">' +
+    buyBtn('themes_all', 'Every Theme', '', 1) + '<button data-act="themes">Not now</button>' + RESTLNK + '</div>');
+}
+function removeAds() {
+  log('removeads_tap');
+  modal('<h2>Remove ads</h2><p class="sub">Ads only show between puzzles, never in the middle of one. Remove them for good with one purchase.</p><div class="grid1">' +
+    buyBtn('remove_ads', 'Remove Ads', '', 1) + (hasModes() ? '' : buyBtn('bundle', 'Ad-free + All Modes', 'Also unlocks every level in every mode')) +
+    '<button data-act="menu">Not now</button>' + RESTLNK + '</div>');
+}
 // ambient sound for a pack (looping, quiet, starts after your first tap because phones block sound before that)
 var SND = { want: '', a: null, cur: '', vol: 0.35 };
 function soundSync() {
@@ -781,13 +883,13 @@ var fxRz = 0; window.addEventListener('resize', function () { clearTimeout(fxRz)
 function themeChip(k, it) {
   var sel = (P.theme[k] === it[0]);
   var sw = k === 'card' ? '<span class="tsw tcard" data-c="' + it[0] + '">Aa</span>' : (k === 'season' || k === 'hol') ? '<span class="tsw temo">' + it[3] + '</span>' : '<span class="tsw" style="background:' + it[3] + '"></span>';
-  return '<button class="tchip' + (sel ? ' sel' : '') + '" data-act="theme" data-k="' + k + '" data-v="' + it[0] + '">' + sw + '<b>' + esc(it[1]) + '</b><small>' + (k === 'hol' && it[0] !== 'none' ? 'Seasonal' : it[2] ? 'Free' : 'Paid') + '</small></button>';
+  return '<button class="tchip' + (sel ? ' sel' : '') + '" data-act="theme" data-k="' + k + '" data-v="' + it[0] + '">' + sw + '<b>' + esc(it[1]) + '</b><small>' + (k === 'hol' && it[0] !== 'none' ? 'Seasonal' : it[2] ? 'Free' : hasTheme(k, it) ? 'Yours' : '🔒 Paid') + '</small></button>';
 }
 function themes() {
-  var auto = P.theme.auto !== false, h = '<h2>Themes</h2><p class="sub">Try anything. In this preview everything is free; in the full game the ones marked Paid cost a little.</p>';
+  var auto = P.theme.auto !== false, h = '<h2>Themes</h2><p class="sub">Make the game your own. Holiday looks switch on by themselves.</p>';
   h += '<div class="tsec"><h3>Theme packs</h3><p class="tnote">A painted scene, matching cards, moving details and calm sounds.</p><div class="pkgrid">' +
     '<button class="pk' + (P.theme.pack === 'none' ? ' sel' : '') + ' pknone" data-act="pack" data-v="none"><b>No pack</b></button>' +
-    PACKS.map(function (p) { return '<button class="pk' + (P.theme.pack === p.id ? ' sel' : '') + '" data-act="pack" data-v="' + p.id + '" style="background-image:linear-gradient(transparent 35%,rgba(0,0,0,.62)),url(packs/' + p.id + '.webp)"><span class="pkt">' + (p.free ? 'Free' : 'Paid') + '</span><b>' + esc(p.name) + '</b><small>\uD83D\uDD0A ' + esc(p.blurb) + '</small></button>'; }).join('') + '</div></div>';
+    PACKS.map(function (p) { return '<button class="pk' + (P.theme.pack === p.id ? ' sel' : '') + '" data-act="pack" data-v="' + p.id + '" style="background-image:linear-gradient(transparent 35%,rgba(0,0,0,.62)),url(packs/' + p.id + '.webp)"><span class="pkt">' + (p.free ? 'Free' : hasPack(p.id) ? 'Yours' : '🔒 ' + esc(price('theme_' + p.id))) + '</span><b>' + esc(p.name) + '</b><small>\uD83D\uDD0A ' + esc(p.blurb) + '</small></button>'; }).join('') + '</div></div>';
   Object.keys(TH).forEach(function (k) {
     h += '<div class="tsec"><h3>' + TH[k].label + '</h3><div class="tgrid">' + TH[k].items.map(function (it) { return themeChip(k, it); }).join('') + '</div>' +
       (k === 'hol' ? '<button class="tauto" data-act="holauto">Switch on by itself during each holiday: <b>' + (auto ? 'On' : 'Off') + '</b></button>' : '') + '</div>';
@@ -804,7 +906,7 @@ function showWin(stars, secs, done) {
   var names = S.lv.cats.map(function (c, i) { var p = PAL[i % PAL.length]; return '<span class="chip" style="background:linear-gradient(135deg,' + p[0] + ',' + p[1] + ')">' + esc(c) + '</span>'; }).join('');
   var fun = '';
   var ask = [5, 15, 30].filter(function (x) { return done >= x && P.funAsked.indexOf(x) < 0; })[0];
-  if (ask && !S.daily) {
+  if (ask && !S.daily && !NATIVE) {
     fun = '<div class="fun"><p>Be honest: is this game fun?</p><div class="row"><button data-act="fun" data-v="yes">Yes</button><button data-act="fun" data-v="ok">It\'s OK</button><button data-act="fun" data-v="no">Not really</button></div></div>';
     P.funAsked.push(ask); saveP();
   }
@@ -843,14 +945,14 @@ function menu() {
     '<button data-act="how">How to play</button>' +
     '<button data-act="settings">Settings</button>' +
     '<button data-act="stats">My stats</button>' +
-    '<button data-act="remove">Remove ads: $3.99</button>' +
+    (hasAdFree() ? '' : '<button data-act="remove">Remove ads · ' + esc(price('remove_ads')) + '</button>') +
     '<button data-act="restore">Restore purchases</button></div>');
 }
 function modes() {
   var h = '<h2>Choose a mode</h2><div class="grid1">', cm = S ? S.mode : P.mode;
   visibleModes().forEach(function (m) {
     var n = Object.keys(P.sm[m]).length;
-    h += '<button class="mt' + (m === cm ? ' sel' : '') + '" data-act="mode" data-m="' + m + '">' + MICON[m] + '<span style="flex:1"><b>' + MODES[m].name + '</b><small>' + MODES[m].blurb + '</small><span class="bar2"><i style="width:' + Math.min(100, n) + '%"></i></span><small>' + n + ' of 100 levels done</small></span></button>';
+    h += '<button class="mt' + (m === cm ? ' sel' : '') + '" data-act="mode" data-m="' + m + '">' + MICON[m] + '<span style="flex:1"><b>' + MODES[m].name + '</b><small>' + MODES[m].blurb + '</small><span class="bar2"><i style="width:' + Math.min(100, n) + '%"></i></span><small>' + n + ' of 100 levels done' + (FREEMODES[m] ? ' · free' : hasModes() ? '' : ' · ' + FREELEVELS + ' free') + '</small></span></button>';
   });
   modal(h + '<button data-act="menu">Back</button></div>');
 }
@@ -859,7 +961,7 @@ function levels() {
   var h = '<h2>' + MODES[m].name + ' levels</h2><div class="lgrid">';
   for (var n = 1; n <= 100; n++) {
     var s = P.sm[m][n] || 0;
-    h += '<button class="lv' + (n === (S && !S.daily ? S.lv.n : -1) ? ' cur' : '') + '" data-act="go" data-n="' + n + '">' + n + '<i>' + (s ? '★'.repeat(s) : '·') + '</i></button>';
+    h += '<button class="lv' + (n === (S && !S.daily ? S.lv.n : -1) ? ' cur' : '') + '" data-act="go" data-n="' + n + '">' + n + '<i>' + (s ? '★'.repeat(s) : levelLocked(m, n) ? '🔒' : '·') + '</i></button>';
   }
   modal(h + '</div><div class="row"><button data-act="menu">Back</button></div>');
 }
@@ -905,7 +1007,7 @@ function stats() {
   var bars = per.filter(function (p) { return p[1] > 0; }).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 5).map(function (p) { return '<div class="sbar"><span>' + MODES[p[0]].name + '</span><i><u style="width:' + Math.round(100 * p[1] / mx) + '%"></u></i><em>' + p[1] + '</em></div>'; }).join('');
   modal('<h2>My stats</h2><div class="stg">' + tile(doneAll.length, 'Puzzles solved') + tile(Object.keys(days).length, 'Days played') + tile(avgM, 'Misses per puzzle') + tile(avgS + 's', 'Average time') +
     tile(P.streak.count, 'Daily streak') + tile(cnt('hint'), 'Hints used') + '</div>' + (bars ? '<div class="sbars"><h3>Your top modes</h3>' + bars + '</div>' : '') +
-    '<textarea id="rep" class="hid" readonly>' + esc(rep) + '</textarea><div class="row"><button class="pri" data-act="copy">Copy my stats</button><button data-act="menu">Back</button></div>');
+    (NATIVE ? '<div class="row"><button class="pri" data-act="menu">Back</button></div>' : '<textarea id="rep" class="hid" readonly>' + esc(rep) + '</textarea><div class="row"><button class="pri" data-act="copy">Copy my stats</button><button data-act="menu">Back</button></div>'));
 }
 
 // ---------- sound ----------
@@ -1010,16 +1112,16 @@ function act(a, el) {
   else if (a === 'themes') themes();
   else if (a === 'pack') {
     var pv = el.getAttribute('data-v'), pk2 = packOf(pv);
+    if (!hasPack(pv)) return lockPack(pk2);
     P.theme.pack = pv; if (pv !== 'none') P.theme.hol = 'none'; saveP(); applyTheme(); log('theme_try', { k: 'pack', v: pv, paid: pk2 && !pk2.free ? 1 : 0 });
     document.querySelectorAll('.pk').forEach(function (c) { c.classList.toggle('sel', c === el); });
-    if (pk2 && !pk2.free) toast('Free to try now. In the full game this pack is $1.99 (all packs $3.99).');
   }
   else if (a === 'packsnd') { P.packSound = !P.packSound; saveP(); applyTheme(); settings(); }
   else if (a === 'theme') {
     var tk = el.getAttribute('data-k'), tv = el.getAttribute('data-v'), item = TH[tk].items.filter(function (x) { return x[0] === tv; })[0];
+    if (!hasTheme(tk, item)) return lockTheme(tk, item);
     P.theme[tk] = tv; if (tk === 'hol' && tv === 'none') P.theme.auto = false; saveP(); applyTheme(); log('theme_try', { k: tk, v: tv, paid: item[2] ? 0 : 1 });
     document.querySelectorAll('.tchip[data-k="' + tk + '"]').forEach(function (c) { c.classList.toggle('sel', c === el); });
-    if (!item[2]) toast('Free to try now. In the full game this one is a small paid extra.');
   }
   else if (a === 'themereset') { P.theme = { bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }; saveP(); applyTheme(); themes(); }
   else if (a === 'holauto') { P.theme.auto = P.theme.auto === false; saveP(); applyTheme(); themes(); }
@@ -1034,15 +1136,17 @@ function act(a, el) {
   else if (a === 'restart') { closeModal(); restartCur(); }
   else if (a === 'style') { P.style = P.style === 'grid' ? 'solitaire' : 'grid'; saveP(); log('style_switch', { to: P.style }); closeModal(); restartCur(); }
   else if (a === 'share') { shareResult(); }
-  else if (a === 'reset') { if (confirm('Erase all progress and results on this phone?')) { P = defaults(); ST = { ev: [] }; saveP(); store('dw_stats', ST); store('dw_cur', null); startLevel(1); welcome(); } }
+  else if (a === 'reset') { if (confirm('Erase all progress on this phone? Your purchases stay.')) { var keep = P.own; P = defaults(); P.own = keep || {}; ST = { ev: [] }; saveP(); store('dw_stats', ST); store('dw_cur', null); startLevel(1); welcome(); } }
   else if (a === 'fun') { log('fun', { v: el.getAttribute('data-v') }); el.parentNode.parentNode.innerHTML = '<p>Thank you!</p>'; }
   else if (a === 'copy') { var r = $('rep'); r.select(); try { document.execCommand('copy'); toast('Copied'); } catch (x) { } }
-  else if (a === 'restore') { log('restore_tap'); modal('<h2>Restore purchases</h2><p class="sub">Bought something before, or got a new phone? Tap Restore and everything you paid for comes back, using the same Apple ID or Google account you bought with. You never pay twice.</p><p class="sub"><b>This preview has no purchases yet, so there is nothing to restore.</b> In the finished app this button checks your store account and unlocks what you own.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
-  else if (a === 'remove') { log('removeads_tap'); modal('<h2>Remove ads</h2><p class="sub">This preview has no ads at all, and nothing is for sale yet. Thank you for telling us you would want this.</p><div class="row"><button class="pri" data-act="menu">OK</button></div>'); }
+  else if (a === 'restore') restorePurchases();
+  else if (a === 'remove') removeAds();
+  else if (a === 'buy') buy(el.getAttribute('data-v'));
+  else if (a === 'testbuy') { var tb = el.getAttribute('data-v'); setOwned([tb]); bought(tb); }
 }
 $('bUndo').onclick = function () { if (S && S.style === 'grid') gridShuffle(); else undo(); };
 $('bHint').onclick = function () {
-  if (S && S.hints <= 0) { log('adhint_tap'); S.hints += 3; toast('Here are 3 more hints! (The full game shows a short ad here.)'); render(); return; }
+  if (S && S.hints <= 0) { log('adhint_tap'); S.hints += 3; toast('Here are 3 more hints!'); render(); return; } // Phase 3: optional short video first, unless ad-free
   giveHint();
 };
 $('bMenu').onclick = function () { unlock(); menu(); };
@@ -1051,12 +1155,12 @@ window.addEventListener('resize', render);
 function applyFs() { document.documentElement.style.setProperty('--fs', P.fs); }
 applyFs();
 P.theme = Object.assign({ bg: 'auto', color: 'auto', card: 'classic', season: 'none', hol: 'none', auto: true, pack: 'none' }, P.theme || {}); if (P.packSound === undefined) P.packSound = true; if (P.theme.season === 'holiday') P.theme.season = 'none';
-applyTheme();
+themeCheck(); applyTheme(); storeSync();
 
 // ---------- start ----------
 var cur = store('dw_cur');
 try {
-  if (cur && cur.cols) {
+  if (cur && cur.cols && (cur.daily || !levelLocked(cur.mode || 'words', cur.n))) {
     var lv = makeLevel(cur.n, cur.seed, cur.daily ? DCFG : null, cur.mode || 'words');
     S = newState(lv, cur.daily); S.cols = cur.cols; S.slots = cur.slots; S.misses = cur.misses; S.moves = cur.moves; S.hints = cur.hints; S.t0 = cur.t0;
     S.style = cur.style || 'solitaire'; if (cur.gorder) { S.gsel = cur.gsel || []; S.gfound = cur.gfound || []; S.gorder = cur.gorder; } S.doneOrder = cur.doneOrder || [];
@@ -1066,7 +1170,7 @@ try {
 if (P.first) { P.first = false; saveP(); welcome(); }
 
 window.DW = {
-  makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel, holidayNow: holidayNow, activeHoliday: activeHoliday, fxStart: fxStart, FX: FX,
+  makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel, holidayNow: holidayNow, activeHoliday: activeHoliday, storeSync: storeSync, owns: owns, levelLocked: levelLocked, fxStart: fxStart, FX: FX,
   autoplay: function () {
     if (S.style === 'grid') { var gg = 0; while (!S.won && gg++ < 20) { var left = S.lv.cats.map(function (c, i) { return i; }).filter(function (i) { return !isFound(i); }); S.gsel = S.gorder.filter(function (id) { return S.lv.cards[id].cat === left[0]; }); gridSubmit(); } return S.won; }
     var guard = 0;
