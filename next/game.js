@@ -16,15 +16,18 @@ MODES.colors.kind = 'colors';
 MODES.pics.kind = 'img';
 MODES.foods = { name: 'Foods of the World', bank: window.FBANK, blurb: 'Which country is the dish from?', kind: 'img' };
 MODES.states = { name: 'US States', bank: window.SBANK, blurb: 'Sort the states by name and place', kind: 'states' };
+MODES.flowers = { name: 'Flowers', bank: window.FLBANK, blurb: 'Sort flowers by type or by color', kind: 'img' };
+MODES.birds = { name: 'Birds', bank: window.BIBANK2, blurb: 'Which kind of bird is it?', kind: 'img' };
+MODES.places = { name: 'Famous Places', bank: window.PLBANK, blurb: 'Landmarks by type or continent', kind: 'photo' };
 // Mixed: one group from each of several different kinds of cards, so a level has words, colors, numbers, pictures...
 var DOMAINS = [
   ['Fruits', 'Vegetables', 'Berries', 'Nuts', 'Cheeses', 'Breads', 'Desserts', 'Pasta', 'Breakfast foods', 'Candy', 'Spices', 'Condiments', 'Drinks', 'Coffee drinks', 'Ice cream flavors', 'Cooking methods', 'Sweets', 'Fast food', 'Italian', 'Japanese', 'Mexican', 'French', 'Indian', 'Chinese', 'Greek', 'German', 'Kitchen items', 'Kitchen tools', 'Kitchen appliances'],
-  ['Pets', 'Dog breeds', 'Baby animals', 'Farm animals', 'Zoo animals', 'Big cats', 'Rodents', 'Night animals', 'Birds', 'Insects', 'Reptiles', 'Sea creatures', 'Fish', 'Wild animals', 'Sea animals'],
+  ['Pets', 'Dog breeds', 'Baby animals', 'Farm animals', 'Zoo animals', 'Big cats', 'Rodents', 'Night animals', 'Birds', 'Insects', 'Reptiles', 'Sea creatures', 'Fish', 'Wild animals', 'Sea animals', 'Birds of prey', 'Waterbirds', 'Seabirds', 'Backyard birds', 'Tropical birds', 'Birds that cannot fly', 'Farm and game birds', 'Crow family'],
   ['Planets', 'Space'],
   ['Clothes', 'Hats', 'Shoes', 'Jewelry', 'Fabrics', 'Accessories'],
   ['Car brands', 'Road vehicles', 'Boats', 'Aircraft', 'Construction machines', 'Road signs', 'Land vehicles', 'Water vehicles'],
-  ['Trees', 'Tree parts', 'Flowers', 'Plants and flowers', 'Landforms', 'Water sources', 'Weather', 'Seasons', 'Dog sounds'],
-  ['Countries', 'US states', 'Capital cities', 'Continents', 'US cities', 'Rivers', 'Oceans and seas', 'Islands', 'Start with M', 'Start with N', 'Start with A', 'Start with C', 'Start with W', 'Start with I', 'Start with NEW', 'Touch the Pacific Ocean', 'Touch the Gulf of Mexico', 'Touch the Atlantic Ocean', 'Touch a Great Lake', 'Border Mexico', 'New England', 'Mountain states', 'The original 13 colonies', 'Joined the Union in the 1900s'],
+  ['Trees', 'Tree parts', 'Flowers', 'Plants and flowers', 'Landforms', 'Water sources', 'Weather', 'Seasons', 'Dog sounds', 'Spring bulbs', 'Wildflowers', 'Tropical flowers', 'Garden favorites', 'Blossoming trees and shrubs', 'Red flowers', 'Yellow flowers', 'Purple flowers', 'White flowers', 'Pink flowers', 'Blue flowers', 'Orange flowers'],
+  ['Countries', 'US states', 'Capital cities', 'Continents', 'US cities', 'Rivers', 'Oceans and seas', 'Islands', 'Start with M', 'Start with N', 'Start with A', 'Start with C', 'Start with W', 'Start with I', 'Start with NEW', 'Touch the Pacific Ocean', 'Touch the Gulf of Mexico', 'Touch the Atlantic Ocean', 'Touch a Great Lake', 'Border Mexico', 'New England', 'Mountain states', 'The original 13 colonies', 'Joined the Union in the 1900s', 'Famous towers', 'Famous bridges', 'Ancient wonders', 'Natural wonders', 'Palaces and famous buildings', 'Statues and monuments', 'Landmarks of Europe', 'Landmarks of Asia', 'Landmarks of North America', 'Landmarks of South America', 'Landmarks of Africa', 'Landmarks of Australia'],
   ['1930s', '1940s', '1950s', '1960s', '1970s', '1980s', '1990s', '2000s', '2010s', 'In the 20s', 'In the 30s', 'In the 40s', 'In the 50s', 'In the 60s', 'In the 70s', 'In the 80s', 'In the 90s', 'Teens', 'Single digits'],
   ['Months', 'Days of the week', 'Time units', 'Holidays'],
   ['Furniture', 'Bathroom items', 'Rooms', 'Cleaning supplies', 'Tools', 'Garden items', 'School supplies', 'School and office'],
@@ -40,11 +43,11 @@ var DOMAINS = [
 ];
 var DOMOF = {};
 DOMAINS.forEach(function (d, i) { d.forEach(function (n) { DOMOF[n] = 'dom' + i; }); });
-var MIXSRC = ['words', 'colors', 'pics', 'nums', 'decades', 'foods', 'states'];
+var MIXSRC = ['words', 'colors', 'pics', 'nums', 'decades', 'foods', 'states', 'flowers', 'birds', 'places'];
 var MIXED = [];
 MIXSRC.forEach(function (m) { MODES[m].bank.forEach(function (b) { MIXED.push({ g: m, name: b.name, words: b.words, tier: b.tier, src: m, dom: DOMOF[b.name] || (m + ':' + b.name) }); }); });
 MODES.mixed = { name: 'Mixed', bank: MIXED, blurb: 'Words, colors, numbers and pictures together', kind: 'mixed' };
-var MORDER = ['words', 'colors', 'pics', 'nums', 'decades', 'wordplay', 'bible', 'foods', 'states', 'mixed'];
+var MORDER = ['words', 'colors', 'pics', 'nums', 'decades', 'wordplay', 'bible', 'foods', 'states', 'flowers', 'birds', 'places', 'mixed'];
 var $ = function (id) { return document.getElementById(id); };
 
 // ---------- helpers ----------
@@ -58,7 +61,12 @@ function dstr(d) { d = d || new Date(); return d.getFullYear() + '-' + ('0' + (d
 function disp(w) { w = String(w).replace(/_/g, ' '); return /[A-Z0-9]/.test(w) ? w : cap(w); }
 var LABELS = { icecream: 'Ice cream', bubbletea: 'Bubble tea', misosoup: 'Miso soup', friedrice: 'Fried rice', springrolls: 'Spring rolls', chowmein: 'Chow mein', dimsum: 'Dim sum',
   pekingduck: 'Peking duck', wontonsoup: 'Wonton soup', greeksalad: 'Greek salad', blackforest: 'Black Forest', gulabjamun: 'Gulab jamun', tandoori: 'Tandoori', sunhat: 'Sun hat', witchhat: 'Witch hat',
-  hotdog: 'Hot dog', paperclip: 'Paper clip', springrolls_: '', bookshelf: 'Bookshelf' };
+  hotdog: 'Hot dog', paperclip: 'Paper clip', springrolls_: '', bookshelf: 'Bookshelf',
+  forgetmenot: 'Forget-me-not', birdofparadise: 'Bird of paradise', tigerlily: 'Tiger lily', cherryblossom: 'Cherry blossom', bluejay: 'Blue jay', kiwibird: 'Kiwi',
+  eiffel: 'Eiffel Tower', bigben: 'Big Ben', pisa: 'Leaning Tower', towerbridge: 'Tower Bridge', brandenburg: 'Brandenburg Gate', sagrada: 'Sagrada Familia', tajmahal: 'Taj Mahal', greatwall: 'Great Wall',
+  fuji: 'Mount Fuji', angkorwat: 'Angkor Wat', forbiddencity: 'Forbidden City', burjkhalifa: 'Burj Khalifa', halong: 'Ha Long Bay', liberty: 'Statue of Liberty', goldengate: 'Golden Gate', rushmore: 'Mount Rushmore',
+  niagara: 'Niagara Falls', grandcanyon: 'Grand Canyon', whitehouse: 'White House', empire: 'Empire State', spaceneedle: 'Space Needle', gatewayarch: 'Gateway Arch', brooklyn: 'Brooklyn Bridge', chichen: 'Chichen Itza',
+  cntower: 'CN Tower', christ: 'Christ Redeemer', machu: 'Machu Picchu', iguazu: 'Iguazu Falls', pyramids: 'Pyramids', victoria: 'Victoria Falls', tablemountain: 'Table Mountain', opera: 'Sydney Opera', harbourbridge: 'Harbour Bridge' };
 function cmode(id) { return S.lv.cards[id].m || S.mode; }
 function label(id) { var w = S.lv.cards[id].w; return LABELS[w] || disp(w); }
 function stateSvg(w, size) {
@@ -211,6 +219,9 @@ function startLevel(n, opts) {
     bible: 'Bible: sort books, people, places and stories into their groups.',
     foods: 'Foods of the World: sort the dishes by the country they come from.',
     states: 'US States: sort the states by their name or where they are.',
+    flowers: 'Flowers: sort the flowers by their type or their color.',
+    birds: 'Birds: sort the birds by the kind of bird they are.',
+    places: 'Famous Places: sort the landmarks by what they are or where they are.',
     mixed: 'Mixed: every group is a different kind of card, so look carefully.'
   };
   if (!P.seen[mode] && TIPS[mode]) { P.seen[mode] = 1; saveP(); toast(TIPS[mode]); }
@@ -352,6 +363,7 @@ function cardEl(id, cls, w) {
     return '<div class="card c ' + cls + '" data-id="' + id + '" style="background:' + hex + ';color:' + hexText(hex) + ';font-size:' + fs2.toFixed(1) + 'px">' + esc(cap(wd)) + '</div>';
   }
   var lab = label(id), nfs = lab.length > 11 ? ' style="font-size:10.5px"' : '';
+  if (kind === 'photo') return '<div class="card p ' + cls + '" data-id="' + id + '"><img class="ph" src="pics/' + wd + '.webp" alt="" draggable="false"><span class="n"' + nfs + '>' + esc(lab) + '</span></div>';
   if (kind === 'states') return '<div class="card p s ' + cls + '" data-id="' + id + '"><span class="n"' + nfs + '>' + esc(lab) + '</span>' + stateSvg(wd, 56) + '</div>';
   return '<div class="card p ' + cls + '" data-id="' + id + '"><img src="pics/' + wd + '.webp" alt="" draggable="false"><span class="n"' + nfs + '>' + esc(lab) + '</span></div>';
 }
@@ -360,6 +372,7 @@ function slotItem(id) {
   if (kind === 'colors') return '<i class="dot" style="background:' + window.COLORS[wd] + '"></i>' + esc(cap(wd));
   if (kind === 'states') return stateSvg(wd, 24) + esc(label(id));
   if (kind === 'img') return '<img src="pics/' + wd + '.webp" alt="">' + esc(label(id));
+  if (kind === 'photo') return '<img class="ph" src="pics/' + wd + '.webp" alt="">' + esc(label(id));
   var t = disp(wd);
   return t.length > 12 ? '<span style="font-size:.88em">' + esc(t) + '</span>' : esc(t);
 }
@@ -569,6 +582,9 @@ function showWin(stars, secs, done) {
     '<button data-act="share">Share result</button></div><div class="row"><button data-act="replay">Play again</button></div>');
 }
 var MICON = {
+  flowers: '<span class="mi fl"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6"/><path d="M12 9.4C12 6 14 4 12 3c-2 1-0 3-0 6.4M14.6 12c3.4 0 5.4-2 6.4 0-1 2-3 0-6.4 0M12 14.6c0 3.4-2 5.4 0 6.4 2-1 0-3 0-6.4M9.4 12C6 12 4 14 3 12c1-2 3 0 6.4 0"/></svg></span>',
+  birds: '<span class="mi bi"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c2-4 6-5 9-3 3-2 7-1 9 3-3 0-4 1-5 2-1 1-1 3 1 5-3 0-5-1-6-3-3 1-6 0-8-4z"/></svg></span>',
+  places: '<span class="mi pl"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M9 7h6l1 14H8L9 7zM6 21h12"/></svg></span>',
   foods: '<span class="mi f"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16a8 8 0 01-16 0z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/></svg></span>',
   states: '<span class="mi s"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h8l1 2h5v6l-3 2v4h-4l-2-3H7l-2-3z"/></svg></span>',
   mixed: '<span class="mi x"></span>',

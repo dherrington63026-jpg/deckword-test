@@ -25,6 +25,9 @@ body[data-mode=bible]{--bg1:#fbf7ec;--bg2:#ece0bf;--acc:#b8892a;--acc2:#e3c066;-
 body[data-mode=foods]{--bg1:#fff4ee;--bg2:#f8d6c4;--acc:#d9482b;--acc2:#f58a5c;--blob1:#ffc9ae;--blob2:#ffe7a8;--card2:#fbe8de}
 body[data-mode=states]{--bg1:#f0f4fb;--bg2:#d5e0f2;--acc:#3b5bb5;--acc2:#6f8fe0;--blob1:#c7d6f5;--blob2:#f5c9d1;--card2:#e6ecf7}
 body[data-mode=mixed]{--bg1:#faf3ff;--bg2:#ead9f7;--acc:#8a45d6;--acc2:#e062a6;--blob1:#ddc4ff;--blob2:#ffc4e1;--card2:#f1e7fa}
+body[data-mode=flowers]{--bg1:#fff3f8;--bg2:#f6d6e6;--acc:#d6457f;--acc2:#f28fb6;--blob1:#ffc6dd;--blob2:#d9f0c8;--card2:#fbe8f1}
+body[data-mode=birds]{--bg1:#f0f8ff;--bg2:#d3e8f7;--acc:#2a8bbf;--acc2:#6fc7e8;--blob1:#bfe3f7;--blob2:#e8f3c9;--card2:#e5f1f9}
+body[data-mode=places]{--bg1:#fdf6e9;--bg2:#ecd9b3;--acc:#1f7a8c;--acc2:#e0a458;--blob1:#c9e6e8;--blob2:#f2d49b;--card2:#f6ecd6}
 @media (prefers-color-scheme:dark){
   :root{--bg1:#1b1623;--bg2:#120f19;--ink:#f4eefb;--soft:#a99fba;--line:rgba(255,255,255,.12);--card:#2b2536;--card2:#231e2d;--glass:rgba(255,255,255,.07);--glass-b:rgba(255,255,255,.14);--shadow:0 1px 0 rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.7);--blob1:#4b2a3e;--blob2:#2c3d5a}
   body[data-mode=colors]{--bg1:#1c1730;--bg2:#120f22;--blob1:#3b2f78;--blob2:#5a2a55;--card2:#272040}
@@ -35,6 +38,9 @@ body[data-mode=mixed]{--bg1:#faf3ff;--bg2:#ead9f7;--acc:#8a45d6;--acc2:#e062a6;-
   body[data-mode=foods]{--bg1:#2b1712;--bg2:#1b0e0a;--blob1:#6b2a18;--blob2:#5b4416;--card2:#33201a}
   body[data-mode=states]{--bg1:#111a2e;--bg2:#0a101e;--blob1:#233c78;--blob2:#5a2336;--card2:#1b2538}
   body[data-mode=mixed]{--bg1:#22142e;--bg2:#150b1e;--blob1:#4d2a78;--blob2:#6b2a52;--card2:#2a1c38}
+  body[data-mode=flowers]{--bg1:#2a1220;--bg2:#190a14;--blob1:#6b1f48;--blob2:#25502a;--card2:#301a28}
+  body[data-mode=birds]{--bg1:#0f1c2b;--bg2:#09111b;--blob1:#1b4a6b;--blob2:#3b4d1a;--card2:#192636}
+  body[data-mode=places]{--bg1:#241d10;--bg2:#17120a;--blob1:#1c4f58;--blob2:#5c4414;--card2:#2c2514}
   body[data-mode=pics]{--bg1:#10201f;--bg2:#0b1514;--blob1:#17524a;--blob2:#1b3a5c;--card2:#1b2b29}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -228,6 +234,12 @@ body.is-dragging *{cursor:grabbing!important}
 .card.p.gcard svg{width:60px;height:55px}
 .slot .sw svg{width:24px;height:22px;vertical-align:-6px;margin-right:4px}
 .slot.band .bw svg{width:24px;height:22px;vertical-align:-6px;margin-right:4px}
+.mt .mi.fl{background:linear-gradient(145deg,#d6457f,#f28fb6)}
+.mt .mi.bi{background:linear-gradient(145deg,#2a8bbf,#6fc7e8)}
+.mt .mi.pl{background:linear-gradient(145deg,#1f7a8c,#e0a458)}
+.card.p img.ph{width:54px;height:54px;object-fit:cover;border-radius:12px}
+.card.p.gcard img.ph{width:60px;height:60px}
+.slot .sw img.ph,.slot.band .bw img.ph{object-fit:cover;border-radius:6px}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 35%,transparent)}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 @keyframes bump{40%{transform:scale(1.07)}}
@@ -256,15 +268,18 @@ body.is-dragging *{cursor:grabbing!important}
 </div>
 <div id="toast"></div>
 <div id="modal"></div>
-<script src="bank.js?v=202610191934"></script>
-<script src="bank_colors.js?v=202610191934"></script>
-<script src="bank_pics.js?v=202610191934"></script>
-<script src="bank_nums.js?v=202610191934"></script>
-<script src="bank_decades.js?v=202610191934"></script>
-<script src="bank_wordplay.js?v=202610191934"></script>
-<script src="bank_bible.js?v=202610191934"></script>
-<script src="bank_foods.js?v=202610191934"></script>
-<script src="bank_states.js?v=202610191934"></script>
-<script src="game.js?v=202610191934"></script>
+<script src="bank.js?v=202610191954"></script>
+<script src="bank_colors.js?v=202610191954"></script>
+<script src="bank_pics.js?v=202610191954"></script>
+<script src="bank_nums.js?v=202610191954"></script>
+<script src="bank_decades.js?v=202610191954"></script>
+<script src="bank_wordplay.js?v=202610191954"></script>
+<script src="bank_bible.js?v=202610191954"></script>
+<script src="bank_foods.js?v=202610191954"></script>
+<script src="bank_states.js?v=202610191954"></script>
+<script src="bank_flowers.js?v=202610191954"></script>
+<script src="bank_birds.js?v=202610191954"></script>
+<script src="bank_places.js?v=202610191954"></script>
+<script src="game.js?v=202610191954"></script>
 </body>
 </html>
