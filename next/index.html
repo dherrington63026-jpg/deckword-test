@@ -240,6 +240,25 @@ body.is-dragging *{cursor:grabbing!important}
 .card.p img.ph{width:54px;height:54px;object-fit:cover;border-radius:12px}
 .card.p.gcard img.ph{width:60px;height:60px}
 .slot .sw img.ph,.slot.band .bw img.ph{object-fit:cover;border-radius:6px}
+/* fit-to-screen scaling: --k scales card size, --ks scales group boxes, --kf scales small text */
+:root{--h:64px;--o:32px;--hp:86px;--op:30px;--img:50px;--sh:108px}
+@media (max-height:720px){:root{--h:56px;--o:28px;--hp:70px;--op:28px;--img:40px;--sh:80px}}
+.card{height:calc(var(--h)*var(--k,1));margin-top:calc(var(--o)*var(--k,1)*-1);line-height:calc(var(--o)*var(--k,1))}
+.card.p{height:calc(var(--hp)*var(--k,1));margin-top:calc(var(--op)*var(--k,1)*-1);line-height:1}
+.card.p img,.card.p img.ph{width:calc(var(--img)*var(--k,1));height:calc(var(--img)*var(--k,1))}
+.card.p .n{font-size:calc(12px*var(--fs)*var(--kf,1))}
+.card.two{line-height:calc(15px*var(--kf,1))}
+.empty{height:calc(var(--h)*var(--k,1))}
+.card.p.s svg{width:calc(54px*var(--k,1));height:calc(49px*var(--k,1))}
+.card.gcard{height:calc(66px*var(--k,1))}
+.card.p.gcard{height:calc(92px*var(--k,1))}
+.card.p.gcard img,.card.p.gcard img.ph{width:calc(56px*var(--k,1));height:calc(56px*var(--k,1))}
+.card.p.gcard svg{width:calc(60px*var(--k,1));height:calc(55px*var(--k,1))}
+.slot{min-height:calc(var(--sh)*var(--ks,1))}
+.slot .sh{font-size:calc(12px*var(--fs)*var(--ks,1))}
+.slot .sw{font-size:calc(14px*var(--fs)*var(--ks,1))}
+.slot.done .sh{font-size:calc(15px*var(--fs)*var(--ks,1))}
+.slot.band{min-height:0}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 35%,transparent)}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 @keyframes bump{40%{transform:scale(1.07)}}
@@ -268,18 +287,18 @@ body.is-dragging *{cursor:grabbing!important}
 </div>
 <div id="toast"></div>
 <div id="modal"></div>
-<script src="bank.js?v=202610192026"></script>
-<script src="bank_colors.js?v=202610192026"></script>
-<script src="bank_pics.js?v=202610192026"></script>
-<script src="bank_nums.js?v=202610192026"></script>
-<script src="bank_decades.js?v=202610192026"></script>
-<script src="bank_wordplay.js?v=202610192026"></script>
-<script src="bank_bible.js?v=202610192026"></script>
-<script src="bank_foods.js?v=202610192026"></script>
-<script src="bank_states.js?v=202610192026"></script>
-<script src="bank_flowers.js?v=202610192026"></script>
-<script src="bank_birds.js?v=202610192026"></script>
-<script src="bank_places.js?v=202610192026"></script>
-<script src="game.js?v=202610192026"></script>
+<script src="bank.js?v=202610192043"></script>
+<script src="bank_colors.js?v=202610192043"></script>
+<script src="bank_pics.js?v=202610192043"></script>
+<script src="bank_nums.js?v=202610192043"></script>
+<script src="bank_decades.js?v=202610192043"></script>
+<script src="bank_wordplay.js?v=202610192043"></script>
+<script src="bank_bible.js?v=202610192043"></script>
+<script src="bank_foods.js?v=202610192043"></script>
+<script src="bank_states.js?v=202610192043"></script>
+<script src="bank_flowers.js?v=202610192043"></script>
+<script src="bank_birds.js?v=202610192043"></script>
+<script src="bank_places.js?v=202610192043"></script>
+<script src="game.js?v=202610192043"></script>
 </body>
 </html>

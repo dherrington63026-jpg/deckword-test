@@ -351,15 +351,32 @@ var STAR = '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.
 var CHECK = '<span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
 function hexText(hex) { var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#2b211c' : '#ffffff'; }
 
+var K = 1, fitTries = 0;
+// Make the cards (and group boxes) as big as the screen allows, so easy levels do not leave half the screen empty.
+function fitK(cw, grid) {
+  var cc = $('cols'), avail = (cc.clientHeight || Math.round(window.innerHeight * 0.5)) - 22;
+  var small = window.innerHeight <= 720;
+  var tall = S.lv.cards.some(function (c) { var kd = MODES[c.m || S.mode].kind; return kd !== 'text' && kd !== 'colors'; });
+  var h0 = tall ? (small ? 70 : 86) : (small ? 56 : 64), s0 = tall ? (small ? 42 : 56) : (small ? 28 : 32), base, kmax;
+  if (grid) {
+    var ncol = S.lv.cards.length >= 16 ? 4 : 3, rows = Math.max(1, Math.ceil(S.gorder.length / ncol)), gh = tall ? 92 : 66;
+    base = rows * (gh + 9) - 9; kmax = Math.min(2.0, (tall ? 1.7 : 1.4) * cw / gh);
+  } else {
+    var depth = 1; S.cols.forEach(function (c) { if (c.length > depth) depth = c.length; });
+    base = (depth - 1) * s0 + h0; kmax = Math.min(2.4, (tall ? 1.9 : 1.5) * cw / h0);
+  }
+  return Math.round(Math.max(1, Math.min(kmax, avail / base)) * 100) / 100;
+}
 function cardEl(id, cls, w) {
   var wd = S.lv.cards[id].w, m = cmode(id), kind = MODES[m].kind;
   if (kind === 'text') {
     var txt = disp(wd), two = txt.length > 11 && txt.indexOf(' ') > 0;
-    var fs = two ? 13 * P.fs : Math.max(12, Math.min(19, Math.floor(w * 0.82 / (txt.length * 0.56)))) * P.fs;
+    var capPx = Math.round(19 * (1 + (K - 1) * 0.6)) * (txt.length <= 3 ? 1.25 : 1);
+    var fs = two ? 13 * P.fs * (1 + (K - 1) * 0.35) : Math.max(12, Math.min(capPx, Math.floor(w * 0.82 / (txt.length * 0.56)))) * P.fs;
     return '<div class="card' + (two ? ' two' : '') + ' ' + cls + '" data-id="' + id + '" style="font-size:' + fs.toFixed(1) + 'px">' + esc(txt) + '</div>';
   }
   if (kind === 'colors') {
-    var hex = window.COLORS[wd], fs2 = Math.max(12, Math.min(17, Math.floor(w * 0.8 / (wd.length * 0.56)))) * P.fs;
+    var hex = window.COLORS[wd], fs2 = Math.max(12, Math.min(Math.round(17 * (1 + (K - 1) * 0.6)), Math.floor(w * 0.8 / (wd.length * 0.56)))) * P.fs;
     return '<div class="card c ' + cls + '" data-id="' + id + '" style="background:' + hex + ';color:' + hexText(hex) + ';font-size:' + fs2.toFixed(1) + 'px">' + esc(cap(wd)) + '</div>';
   }
   var lab = label(id), nfs = lab.length > 11 ? ' style="font-size:10.5px"' : '';
@@ -398,6 +415,7 @@ function render() {
   var W = Math.min(window.innerWidth, 480) - 28;
   var nc = S.cols.length, gap = 9, cw = (W - gap * (nc - 1)) / nc;
   var h = S.hint, sid = selId(), co = coachInfo();
+  if (S.style !== 'grid') applyK(fitK(cw, false));
   document.body.setAttribute('data-mode', S.mode);
   $('modeTag').textContent = S.daily ? 'Daily deck · ' + MODES[S.mode].name : MODES[S.mode].name;
   $('lvl').textContent = S.daily ? 'Today' : 'Level ' + S.lv.n;
@@ -445,6 +463,9 @@ function render() {
     var r1 = el.getBoundingClientRect(), dx = r0.left - r1.left, dy = r0.top - r1.top;
     if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
   });
+  var k2 = fitK(cw, false);
+  if (Math.abs(k2 - K) > 0.03 && fitTries < 3) { fitTries++; applyK(k2); render(); return; }
+  fitTries = 0;
   persistCur();
 }
 // a copy of the card flies into the group box
@@ -534,8 +555,14 @@ function gridSubmit() {
     persistCur(); render();
   }
 }
+function applyK(k) {
+  K = k;
+  $('cols').style.setProperty('--k', k); $('cols').style.setProperty('--kf', 1 + (k - 1) * 0.5);
+  $('slots').style.setProperty('--ks', 1 + (k - 1) * 0.35);
+}
 function renderGrid() {
   var W = Math.min(window.innerWidth, 480) - 28, n = S.lv.cards.length, cols = n >= 16 ? 4 : 3, gap = 9, cw = (W - gap * (cols - 1)) / cols;
+  applyK(fitK(cw, true));
   $('coach').classList.remove('on');
   var sl = $('slots'); sl.className = 'slots bands';
   sl.innerHTML = S.gfound.map(function (c) {
@@ -549,6 +576,9 @@ function renderGrid() {
     ch += cardEl(id, cls, cw);
   });
   $('cols').innerHTML = ch + '</div>';
+  var k2 = fitK(cw, true);
+  if (Math.abs(k2 - K) > 0.03 && fitTries < 3) { fitTries++; applyK(k2); renderGrid(); return; }
+  fitTries = 0;
 }
 function shareResult() {
   var sq = ['🟥', '🟩', '🟨', '🟦', '🟪'];
