@@ -18,9 +18,17 @@
 }
 body[data-mode=colors]{--bg1:#f8f5ff;--bg2:#e8dffa;--acc:#7a5af8;--acc2:#a98bff;--blob1:#d6c8ff;--blob2:#ffd1ec;--card2:#f1ecfb}
 body[data-mode=pics]{--bg1:#f0fbf8;--bg2:#d9eee9;--acc:#0f9d8c;--acc2:#3ccfb8;--blob1:#b9efe3;--blob2:#cfe4ff;--card2:#e9f5f1}
+body[data-mode=nums]{--bg1:#f1f7ff;--bg2:#dbe9fb;--acc:#2f7de1;--acc2:#58b6f0;--blob1:#bcd7ff;--blob2:#cdf1ff;--card2:#e8f0fb}
+body[data-mode=decades]{--bg1:#fff6e8;--bg2:#f6dfba;--acc:#e0803a;--acc2:#f2b84e;--blob1:#ffd9a3;--blob2:#ffc7a8;--card2:#f7ecd9}
+body[data-mode=wordplay]{--bg1:#fff1f6;--bg2:#f8d9e6;--acc:#d6458f;--acc2:#f58cb8;--blob1:#ffc4dc;--blob2:#e3d1ff;--card2:#fbe9f1}
+body[data-mode=bible]{--bg1:#fbf7ec;--bg2:#ece0bf;--acc:#b8892a;--acc2:#e3c066;--blob1:#f2dfa5;--blob2:#d9e6f5;--card2:#f4eedb}
 @media (prefers-color-scheme:dark){
   :root{--bg1:#1b1623;--bg2:#120f19;--ink:#f4eefb;--soft:#a99fba;--line:rgba(255,255,255,.12);--card:#2b2536;--card2:#231e2d;--glass:rgba(255,255,255,.07);--glass-b:rgba(255,255,255,.14);--shadow:0 1px 0 rgba(0,0,0,.4),0 10px 22px -12px rgba(0,0,0,.7);--blob1:#4b2a3e;--blob2:#2c3d5a}
   body[data-mode=colors]{--bg1:#1c1730;--bg2:#120f22;--blob1:#3b2f78;--blob2:#5a2a55;--card2:#272040}
+  body[data-mode=nums]{--bg1:#101a2b;--bg2:#0a111d;--blob1:#1d3f73;--blob2:#17506a;--card2:#1b2638}
+  body[data-mode=decades]{--bg1:#2a1d12;--bg2:#1a110a;--blob1:#6a3a14;--blob2:#5b2a22;--card2:#2f2418}
+  body[data-mode=wordplay]{--bg1:#2a1220;--bg2:#1a0a14;--blob1:#6b1f48;--blob2:#3b2a6b;--card2:#301a28}
+  body[data-mode=bible]{--bg1:#241f12;--bg2:#17130a;--blob1:#5c4814;--blob2:#1d3552;--card2:#2c2616}
   body[data-mode=pics]{--bg1:#10201f;--bg2:#0b1514;--blob1:#17524a;--blob2:#1b3a5c;--card2:#1b2b29}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -184,6 +192,11 @@ textarea{width:100%;height:230px;border-radius:16px;border:1px solid var(--line)
 .col.over{outline:2px dashed var(--acc);outline-offset:3px;border-radius:14px}
 body.is-dragging{cursor:grabbing}
 body.is-dragging *{cursor:grabbing!important}
+.card.two{white-space:normal;line-height:15px;padding:5px 4px 0}
+.mt .mi.n{background:linear-gradient(145deg,#2f7de1,#58b6f0);font-size:17px}
+.mt .mi.d{background:linear-gradient(145deg,#e0803a,#f2b84e);font-size:17px}
+.mt .mi.r{background:linear-gradient(145deg,#d6458f,#f58cb8);font-size:16px}
+.mt .mi.b{background:linear-gradient(145deg,#b8892a,#e3c066)}
 @keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 35%,transparent)}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 @keyframes bump{40%{transform:scale(1.07)}}
@@ -215,6 +228,10 @@ body.is-dragging *{cursor:grabbing!important}
 <script src="bank.js"></script>
 <script src="bank_colors.js"></script>
 <script src="bank_pics.js"></script>
+<script src="bank_nums.js"></script>
+<script src="bank_decades.js"></script>
+<script src="bank_wordplay.js"></script>
+<script src="bank_bible.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

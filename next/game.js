@@ -7,7 +7,12 @@ var MODES = {
   colors: { name: 'Colors',   bank: window.CBANK, blurb: 'Sort shades into color families' },
   pics:   { name: 'Pictures', bank: window.PBANK, blurb: 'Sort pictures into groups' }
 };
-var MORDER = ['words', 'colors', 'pics'];
+MODES.nums = { name: 'Numbers', bank: window.NBANK, blurb: 'Sort numbers: even, prime, multiples...', kind: 'text' };
+MODES.decades = { name: 'Remember When', bank: window.DBANK, blurb: 'Which decade did it arrive?', kind: 'text' };
+MODES.wordplay = { name: 'Word Play', bank: window.WBANK, blurb: 'Rhymes, spelling and word parts', kind: 'text' };
+MODES.bible = { name: 'Bible', bank: window.BIBANK, blurb: 'Books, people, places and stories', kind: 'text' };
+MODES.words.kind = 'text';
+var MORDER = ['words', 'colors', 'pics', 'nums', 'decades', 'wordplay', 'bible'];
 var $ = function (id) { return document.getElementById(id); };
 
 // ---------- helpers ----------
@@ -18,7 +23,8 @@ function store(k, v) { try { if (v === undefined) { var s = localStorage.getItem
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function dstr(d) { d = d || new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
-function label(id) { var w = S.lv.cards[id].w; return w === 'icecream' ? 'Ice cream' : w === 'bubbletea' ? 'Bubble tea' : cap(w); }
+function disp(w) { w = String(w).replace(/_/g, ' '); return /[A-Z0-9]/.test(w) ? w : cap(w); }
+function label(id) { var w = S.lv.cards[id].w; return w === 'icecream' ? 'Ice cream' : w === 'bubbletea' ? 'Bubble tea' : disp(w); }
 
 // ---------- level generator ----------
 var PAIRS = {};
@@ -42,6 +48,8 @@ function cfg(n, mode) {
   else if (n <= 80) c = { cats: 5, per: 5, tricks: 1 };
   else c = { cats: 5, per: 5, tricks: 2 };
   if (mode === 'colors' && c.cats > 5) c.cats = 5;
+  c.tier = (mode === 'nums' || mode === 'wordplay' || mode === 'bible') ? (n <= 10 ? 1 : n <= 25 ? 2 : 3) : 9;
+  c.gap = mode === 'decades' ? (n <= 25 ? 2 : 1) : 0;
   return c;
 }
 
@@ -50,25 +58,34 @@ function makeLevel(n, seed, over, mode) {
   var BK = MODES[mode].bank, PR = pairsFor(mode);
   var c = over || cfg(n, mode);
   var rng = mulberry32(seed);
-  for (var attempt = 0; attempt < 800; attempt++) {
+  var tier = c.tier || 9, gap = c.gap || 0;
+  function gapOK(idx, chosen) {
+    if (!gap || BK[idx].pos === undefined) return true;
+    for (var z = 0; z < chosen.length; z++) if (BK[chosen[z]].pos !== undefined && Math.abs(BK[chosen[z]].pos - BK[idx].pos) < gap) return false;
+    return true;
+  }
+  for (var attempt = 0; attempt < 1200; attempt++) {
     var chosen = [], used = {}, tw = [];
-    if (c.tricks > 0) {
+    var tn = attempt < 700 ? c.tricks : 0; // no tricks possible in some modes: fall back after many tries
+    if (tn > 0) {
       var tp = shuffle(PR.slice(), rng);
-      for (var q = 0; q < tp.length && tw.length < c.tricks; q++) {
+      for (var q = 0; q < tp.length && tw.length < tn; q++) {
         var p = tp[q];
+        if ((BK[p.a].tier || 1) > tier || (BK[p.b].tier || 1) > tier) continue;
         if (chosen.indexOf(p.a) >= 0 || chosen.indexOf(p.b) >= 0) continue;
+        if (!gapOK(p.a, chosen) || !gapOK(p.b, chosen)) continue;
         var ga = BK[p.a].g, gb = BK[p.b].g;
         if ((used[ga] && ga !== gb) || (used[gb] && ga !== gb) || (ga === gb && used[ga])) continue;
         var w = p.words[Math.floor(rng() * p.words.length)];
         chosen.push(p.a, p.b); used[ga] = 1; used[gb] = 1;
         tw.push({ w: w, a: p.a, b: p.b, to: rng() < 0.5 ? p.a : p.b });
       }
-      if (tw.length < c.tricks) continue;
+      if (tw.length < tn) continue;
     }
     var order = shuffle(range(BK.length), rng);
     for (var k = 0; k < order.length && chosen.length < c.cats; k++) {
       var idx = order[k], g = BK[idx].g;
-      if (used[g] || chosen.indexOf(idx) >= 0) continue;
+      if (used[g] || chosen.indexOf(idx) >= 0 || (BK[idx].tier || 1) > tier || !gapOK(idx, chosen)) continue;
       chosen.push(idx); used[g] = 1;
     }
     if (chosen.length < c.cats) continue;
@@ -102,11 +119,12 @@ function makeLevel(n, seed, over, mode) {
 
 // ---------- state ----------
 var S = null, hist = [];
-function defaults() { return { sm: { words: {}, colors: {}, pics: {} }, curs: { words: 1, colors: 1, pics: 1 }, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {} }; }
+function defaults() { var sm = {}, cu = {}; MORDER.forEach(function (m) { sm[m] = {}; cu[m] = 1; }); return { sm: sm, curs: cu, mode: 'words', fs: 1, sound: true, first: true, streak: { last: '', count: 0 }, daily: {}, funAsked: [], coachDone: false, seen: {} }; }
 var P = store('dw_prog') || defaults();
 (function migrate() { // from the first test version
   var d = defaults();
   for (var k in d) if (P[k] === undefined) P[k] = d[k];
+  MORDER.forEach(function (m) { if (!P.sm[m]) P.sm[m] = {}; if (!P.curs[m]) P.curs[m] = 1; });
   if (P.stars) { P.sm.words = P.stars; delete P.stars; if (P.cur) P.curs.words = P.cur; delete P.cur; }
   if (!P.first) P.coachDone = P.coachDone || P.funAsked.length > 0 || Object.keys(P.sm.words).length > 1;
   saveP();
@@ -121,21 +139,30 @@ function newState(lv, daily) {
 }
 function snap() { return JSON.stringify({ c: S.cols, s: S.slots, m: S.moves }); }
 function pushHist() { hist.push(snap()); if (hist.length > 400) hist.shift(); }
-function persistCur() { if (!S) return; store('dw_cur', { mode: S.mode, n: S.lv.n, seed: S.lv.seed, daily: S.daily, cols: S.cols, slots: S.slots, misses: S.misses, moves: S.moves, hints: S.hints, t0: S.t0 }); }
+function persistCur() { if (!S || S.won) return; store('dw_cur', { mode: S.mode, n: S.lv.n, seed: S.lv.seed, daily: S.daily, cols: S.cols, slots: S.slots, misses: S.misses, moves: S.moves, hints: S.hints, t0: S.t0 }); }
 
-function dailyMode() { var d = new Date(); var k = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); return MORDER[k % 3]; }
-var DCFG = { cats: 4, per: 5, tricks: 1 };
+function dailyMode() { var d = new Date(); var k = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); return MORDER[k % MORDER.length]; }
+var DCFG = { cats: 4, per: 5, tricks: 1, tier: 3, gap: 1 };
 
 function startLevel(n, opts) {
   opts = opts || {};
   var mode = opts.mode || P.mode;
   var seed = opts.seed || (n * 7919 + 13 + MORDER.indexOf(mode) * 100003);
   var lv = makeLevel(n, seed, opts.cfg, mode);
+  document.querySelectorAll('.ghost,.drag-ghost').forEach(function (e) { e.remove(); });
   S = newState(lv, opts.daily); hist = [];
   if (!opts.daily) { P.mode = mode; P.curs[mode] = n; saveP(); }
   log('level_start', { n: n, daily: !!opts.daily });
   persistCur(); closeModal(); render();
-  if (!P.seen[mode] && mode !== 'words') { P.seen[mode] = 1; saveP(); toast(mode === 'colors' ? 'Colors: group the shades by color family. Some shades sit between two families!' : 'Pictures: group the pictures by what they are.'); }
+  var TIPS = {
+    colors: 'Colors: group the shades by color family. Some shades sit between two families!',
+    pics: 'Pictures: group the pictures by what they are.',
+    nums: 'Numbers: sort by what they have in common, like even, odd, or times tables.',
+    decades: 'Remember When: sort by the decade each one first arrived.',
+    wordplay: 'Word Play: sort by sound or spelling, like rhymes, endings, or double letters.',
+    bible: 'Bible: sort books, people, places and stories into their groups.'
+  };
+  if (!P.seen[mode] && TIPS[mode]) { P.seen[mode] = 1; saveP(); toast(TIPS[mode]); }
 }
 
 // ---------- actions ----------
@@ -243,7 +270,7 @@ function win() {
   saveP(); store('dw_cur', null);
   log('level_done', { n: S.lv.n, daily: S.daily, misses: S.misses, moves: S.moves, secs: secs, stars: stars, hints: 3 - S.hints });
   sfx('win');
-  var done = Object.keys(P.sm.words).length + Object.keys(P.sm.colors).length + Object.keys(P.sm.pics).length;
+  var done = totalDone();
   setTimeout(function () { showWin(stars, secs, done); }, 600);
 }
 
@@ -255,9 +282,10 @@ function hexText(hex) { var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex
 
 function cardEl(id, cls, w) {
   var wd = S.lv.cards[id].w, m = S.mode;
-  if (m === 'words') {
-    var fs = Math.max(12, Math.min(19, Math.floor(w * 0.82 / (wd.length * 0.56)))) * P.fs;
-    return '<div class="card ' + cls + '" data-id="' + id + '" style="font-size:' + fs.toFixed(1) + 'px">' + esc(cap(wd)) + '</div>';
+  if (MODES[m].kind === 'text') {
+    var txt = disp(wd), two = txt.length > 11 && txt.indexOf(' ') > 0;
+    var fs = two ? 13 * P.fs : Math.max(12, Math.min(19, Math.floor(w * 0.82 / (txt.length * 0.56)))) * P.fs;
+    return '<div class="card' + (two ? ' two' : '') + ' ' + cls + '" data-id="' + id + '" style="font-size:' + fs.toFixed(1) + 'px">' + esc(txt) + '</div>';
   }
   if (m === 'colors') {
     var hex = window.COLORS[wd], fs2 = Math.max(12, Math.min(17, Math.floor(w * 0.8 / (wd.length * 0.56)))) * P.fs;
@@ -269,7 +297,8 @@ function slotItem(id) {
   var wd = S.lv.cards[id].w;
   if (S.mode === 'colors') return '<i class="dot" style="background:' + window.COLORS[wd] + '"></i>' + esc(cap(wd));
   if (S.mode === 'pics') return '<img src="pics/' + wd + '.webp" alt="">' + esc(label(id));
-  return esc(cap(wd));
+  var t = disp(wd);
+  return t.length > 12 ? '<span style="font-size:.88em">' + esc(t) + '</span>' : esc(t);
 }
 
 function coachInfo() {
@@ -347,6 +376,7 @@ function fly(id, si) {
   g.className = el.className.replace(/\bsel\b|\bhint\b/g, '') + ' ghost';
   g.style.left = r.left + 'px'; g.style.top = r.top + 'px'; g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
   document.body.appendChild(g);
+  setTimeout(function () { g.remove(); }, 900);
   setTimeout(function () {
     var t = document.querySelector('.slot[data-slot="' + si + '"]');
     if (!t) { g.remove(); return; }
@@ -382,7 +412,7 @@ function toast(m) { var t = $('toast'); if (!m) { t.classList.remove('on'); retu
 // ---------- modals ----------
 function modal(html) { var m = $('modal'); m.innerHTML = '<div class="sheet">' + html + '</div>'; m.classList.add('on'); }
 function closeModal() { $('modal').classList.remove('on'); $('modal').innerHTML = ''; }
-function totalDone() { return Object.keys(P.sm.words).length + Object.keys(P.sm.colors).length + Object.keys(P.sm.pics).length; }
+function totalDone() { var n = 0; MORDER.forEach(function (m) { n += Object.keys(P.sm[m]).length; }); return n; }
 
 function showWin(stars, secs, done) {
   var names = S.lv.cats.map(function (c, i) { var p = PAL[i % PAL.length]; return '<span class="chip" style="background:linear-gradient(135deg,' + p[0] + ',' + p[1] + ')">' + esc(c) + '</span>'; }).join('');
@@ -399,6 +429,10 @@ function showWin(stars, secs, done) {
     '<button data-act="replay">Play again</button></div>');
 }
 var MICON = {
+  nums: '<span class="mi n">123</span>',
+  decades: '<span class="mi d">70s</span>',
+  wordplay: '<span class="mi r">A–Z</span>',
+  bible: '<span class="mi b"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4z"/><path d="M12 8v6M9.5 10.5h5"/></svg></span>',
   words: '<span class="mi w">Aa</span>',
   colors: '<span class="mi c"></span>',
   pics: '<span class="mi p"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3.5"/><circle cx="9" cy="10" r="2"/><path d="M3 17l5-5 4 4 3-3 6 6"/></svg></span>'
