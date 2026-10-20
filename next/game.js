@@ -12,7 +12,39 @@ MODES.decades = { name: 'Remember When', bank: window.DBANK, blurb: 'Which decad
 MODES.wordplay = { name: 'Word Play', bank: window.WBANK, blurb: 'Rhymes, spelling and word parts', kind: 'text' };
 MODES.bible = { name: 'Bible', bank: window.BIBANK, blurb: 'Books, people, places and stories', kind: 'text' };
 MODES.words.kind = 'text';
-var MORDER = ['words', 'colors', 'pics', 'nums', 'decades', 'wordplay', 'bible'];
+MODES.colors.kind = 'colors';
+MODES.pics.kind = 'img';
+MODES.foods = { name: 'Foods of the World', bank: window.FBANK, blurb: 'Which country is the dish from?', kind: 'img' };
+MODES.states = { name: 'US States', bank: window.SBANK, blurb: 'Sort the states by name and place', kind: 'states' };
+// Mixed: one group from each of several different kinds of cards, so a level has words, colors, numbers, pictures...
+var DOMAINS = [
+  ['Fruits', 'Vegetables', 'Berries', 'Nuts', 'Cheeses', 'Breads', 'Desserts', 'Pasta', 'Breakfast foods', 'Candy', 'Spices', 'Condiments', 'Drinks', 'Coffee drinks', 'Ice cream flavors', 'Cooking methods', 'Sweets', 'Fast food', 'Italian', 'Japanese', 'Mexican', 'French', 'Indian', 'Chinese', 'Greek', 'German', 'Kitchen items', 'Kitchen tools', 'Kitchen appliances'],
+  ['Pets', 'Dog breeds', 'Baby animals', 'Farm animals', 'Zoo animals', 'Big cats', 'Rodents', 'Night animals', 'Birds', 'Insects', 'Reptiles', 'Sea creatures', 'Fish', 'Wild animals', 'Sea animals'],
+  ['Planets', 'Space'],
+  ['Clothes', 'Hats', 'Shoes', 'Jewelry', 'Fabrics', 'Accessories'],
+  ['Car brands', 'Road vehicles', 'Boats', 'Aircraft', 'Construction machines', 'Road signs', 'Land vehicles', 'Water vehicles'],
+  ['Trees', 'Tree parts', 'Flowers', 'Plants and flowers', 'Landforms', 'Water sources', 'Weather', 'Seasons', 'Dog sounds'],
+  ['Countries', 'US states', 'Capital cities', 'Continents', 'US cities', 'Rivers', 'Oceans and seas', 'Islands', 'Start with M', 'Start with N', 'Start with A', 'Start with C', 'Start with W', 'Start with I', 'Start with NEW', 'Touch the Pacific Ocean', 'Touch the Gulf of Mexico', 'Touch the Atlantic Ocean', 'Touch a Great Lake', 'Border Mexico', 'New England', 'Mountain states', 'The original 13 colonies', 'Joined the Union in the 1900s'],
+  ['1930s', '1940s', '1950s', '1960s', '1970s', '1980s', '1990s', '2000s', '2010s', 'In the 20s', 'In the 30s', 'In the 40s', 'In the 50s', 'In the 60s', 'In the 70s', 'In the 80s', 'In the 90s', 'Teens', 'Single digits'],
+  ['Months', 'Days of the week', 'Time units', 'Holidays'],
+  ['Furniture', 'Bathroom items', 'Rooms', 'Cleaning supplies', 'Tools', 'Garden items', 'School supplies', 'School and office'],
+  ['Body parts', 'Bones', 'Organs', 'Senses'],
+  ['Sports', 'Golf words', 'Board games', 'Card games', 'Playground', 'Baseball', 'Sports balls and gear'],
+  ['Instruments', 'Music styles', 'Dances'],
+  ['Computer parts', 'Coding languages', 'Tech companies', 'Gadgets'],
+  ['Punctuation', 'Parts of speech', 'Math words', 'School subjects', 'Kinds of writing'],
+  ['Colors', 'Reds', 'Oranges', 'Pinks', 'Yellows', 'Browns', 'Greens', 'Blues', 'Purples', 'Grays'],
+  ['Fairy tale creatures', 'Halloween things', 'Halloween'],
+  ['Camping gear', 'Beach things'],
+  ['Medical items', 'Money']
+];
+var DOMOF = {};
+DOMAINS.forEach(function (d, i) { d.forEach(function (n) { DOMOF[n] = 'dom' + i; }); });
+var MIXSRC = ['words', 'colors', 'pics', 'nums', 'decades', 'foods', 'states'];
+var MIXED = [];
+MIXSRC.forEach(function (m) { MODES[m].bank.forEach(function (b) { MIXED.push({ g: m, name: b.name, words: b.words, tier: b.tier, src: m, dom: DOMOF[b.name] || (m + ':' + b.name) }); }); });
+MODES.mixed = { name: 'Mixed', bank: MIXED, blurb: 'Words, colors, numbers and pictures together', kind: 'mixed' };
+var MORDER = ['words', 'colors', 'pics', 'nums', 'decades', 'wordplay', 'bible', 'foods', 'states', 'mixed'];
 var $ = function (id) { return document.getElementById(id); };
 
 // ---------- helpers ----------
@@ -24,7 +56,15 @@ function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 function dstr(d) { d = d || new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function disp(w) { w = String(w).replace(/_/g, ' '); return /[A-Z0-9]/.test(w) ? w : cap(w); }
-function label(id) { var w = S.lv.cards[id].w; return w === 'icecream' ? 'Ice cream' : w === 'bubbletea' ? 'Bubble tea' : disp(w); }
+var LABELS = { icecream: 'Ice cream', bubbletea: 'Bubble tea', misosoup: 'Miso soup', friedrice: 'Fried rice', springrolls: 'Spring rolls', chowmein: 'Chow mein', dimsum: 'Dim sum',
+  pekingduck: 'Peking duck', wontonsoup: 'Wonton soup', greeksalad: 'Greek salad', blackforest: 'Black Forest', gulabjamun: 'Gulab jamun', tandoori: 'Tandoori', sunhat: 'Sun hat', witchhat: 'Witch hat',
+  hotdog: 'Hot dog', paperclip: 'Paper clip', springrolls_: '', bookshelf: 'Bookshelf' };
+function cmode(id) { return S.lv.cards[id].m || S.mode; }
+function label(id) { var w = S.lv.cards[id].w; return LABELS[w] || disp(w); }
+function stateSvg(w, size) {
+  var st = window.STATEDATA && window.STATEDATA[w]; if (!st) return '';
+  return '<svg viewBox="6 14 48 44" width="' + size + '" height="' + Math.round(size * 44 / 48) + '"><path d="' + st.d + '" fill="' + st.c + '" stroke="#3a4a5a" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+}
 
 // ---------- level generator ----------
 var PAIRS = {};
@@ -48,15 +88,18 @@ function cfg(n, mode) {
   else if (n <= 80) c = { cats: 5, per: 5, tricks: 1 };
   else c = { cats: 5, per: 5, tricks: 2 };
   if (mode === 'colors' && c.cats > 5) c.cats = 5;
-  c.tier = (mode === 'nums' || mode === 'wordplay' || mode === 'bible') ? (n <= 10 ? 1 : n <= 25 ? 2 : 3) : 9;
+  c.tier = ({ nums: 1, wordplay: 1, bible: 1, foods: 1, states: 1, mixed: 1 })[mode] ? (n <= 10 ? 1 : n <= 25 ? 2 : 3) : 9;
+  if (mode === 'mixed') c.tricks = 0;
+  if (mode === 'states' && c.cats > 4) c.cats = 4;
   c.gap = mode === 'decades' ? (n <= 25 ? 2 : 1) : 0;
   return c;
 }
 
 function makeLevel(n, seed, over, mode) {
   mode = mode || 'words';
+  var base = over || cfg(n, mode);
   var BK = MODES[mode].bank, PR = pairsFor(mode);
-  var c = over || cfg(n, mode);
+  var c = base;
   var rng = mulberry32(seed);
   var tier = c.tier || 9, gap = c.gap || 0;
   function gapOK(idx, chosen) {
@@ -64,8 +107,10 @@ function makeLevel(n, seed, over, mode) {
     for (var z = 0; z < chosen.length; z++) if (BK[chosen[z]].pos !== undefined && Math.abs(BK[chosen[z]].pos - BK[idx].pos) < gap) return false;
     return true;
   }
-  for (var attempt = 0; attempt < 1200; attempt++) {
-    var chosen = [], used = {}, tw = [];
+  for (var attempt = 0; attempt < 1800; attempt++) {
+    if (attempt === 900) c = { cats: base.cats, per: Math.max(3, base.per - 1), tricks: 0, tier: base.tier, gap: base.gap };
+    if (attempt === 1400) c = { cats: Math.max(3, base.cats - 1), per: Math.max(3, base.per - 2), tricks: 0, tier: base.tier, gap: base.gap };
+    var chosen = [], used = {}, usedDom = {}, tw = [];
     var tn = attempt < 700 ? c.tricks : 0; // no tricks possible in some modes: fall back after many tries
     if (tn > 0) {
       var tp = shuffle(PR.slice(), rng);
@@ -86,6 +131,7 @@ function makeLevel(n, seed, over, mode) {
     for (var k = 0; k < order.length && chosen.length < c.cats; k++) {
       var idx = order[k], g = BK[idx].g;
       if (used[g] || chosen.indexOf(idx) >= 0 || (BK[idx].tier || 1) > tier || !gapOK(idx, chosen)) continue;
+      if (BK[idx].dom) { var dd = BK[idx].dom; if (usedDom[dd]) continue; usedDom[dd] = 1; }
       chosen.push(idx); used[g] = 1;
     }
     if (chosen.length < c.cats) continue;
@@ -105,7 +151,7 @@ function makeLevel(n, seed, over, mode) {
       });
       if (must.length + pool.length < c.per) { fail = true; return; }
       shuffle(pool, rng);
-      must.concat(pool.slice(0, c.per - must.length)).forEach(function (w3) { cards.push({ w: w3, cat: k2 }); });
+      must.concat(pool.slice(0, c.per - must.length)).forEach(function (w3) { cards.push({ w: w3, cat: k2, m: BK[ci].src }); });
     });
     if (fail) continue;
     shuffle(cards, rng);
@@ -162,7 +208,10 @@ function startLevel(n, opts) {
     nums: 'Numbers: sort by what they have in common, like even, odd, or times tables.',
     decades: 'Remember When: sort by the decade each one first arrived.',
     wordplay: 'Word Play: sort by sound or spelling, like rhymes, endings, or double letters.',
-    bible: 'Bible: sort books, people, places and stories into their groups.'
+    bible: 'Bible: sort books, people, places and stories into their groups.',
+    foods: 'Foods of the World: sort the dishes by the country they come from.',
+    states: 'US States: sort the states by their name or where they are.',
+    mixed: 'Mixed: every group is a different kind of card, so look carefully.'
   };
   if (!P.seen[mode] && TIPS[mode]) { P.seen[mode] = 1; saveP(); toast(TIPS[mode]); }
   else if (S.style === 'grid' && !P.seen.grid) { P.seen.grid = 1; saveP(); toast('Four Groups: tap ' + S.lv.per + ' cards that belong together, then press Submit.'); }
@@ -292,22 +341,25 @@ var CHECK = '<span class="ck"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L
 function hexText(hex) { var r = parseInt(hex.substr(1, 2), 16), g = parseInt(hex.substr(3, 2), 16), b = parseInt(hex.substr(5, 2), 16); return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#2b211c' : '#ffffff'; }
 
 function cardEl(id, cls, w) {
-  var wd = S.lv.cards[id].w, m = S.mode;
-  if (MODES[m].kind === 'text') {
+  var wd = S.lv.cards[id].w, m = cmode(id), kind = MODES[m].kind;
+  if (kind === 'text') {
     var txt = disp(wd), two = txt.length > 11 && txt.indexOf(' ') > 0;
     var fs = two ? 13 * P.fs : Math.max(12, Math.min(19, Math.floor(w * 0.82 / (txt.length * 0.56)))) * P.fs;
     return '<div class="card' + (two ? ' two' : '') + ' ' + cls + '" data-id="' + id + '" style="font-size:' + fs.toFixed(1) + 'px">' + esc(txt) + '</div>';
   }
-  if (m === 'colors') {
+  if (kind === 'colors') {
     var hex = window.COLORS[wd], fs2 = Math.max(12, Math.min(17, Math.floor(w * 0.8 / (wd.length * 0.56)))) * P.fs;
     return '<div class="card c ' + cls + '" data-id="' + id + '" style="background:' + hex + ';color:' + hexText(hex) + ';font-size:' + fs2.toFixed(1) + 'px">' + esc(cap(wd)) + '</div>';
   }
-  return '<div class="card p ' + cls + '" data-id="' + id + '"><img src="pics/' + wd + '.webp" alt="" draggable="false"><span class="n">' + esc(label(id)) + '</span></div>';
+  var lab = label(id), nfs = lab.length > 11 ? ' style="font-size:10.5px"' : '';
+  if (kind === 'states') return '<div class="card p s ' + cls + '" data-id="' + id + '"><span class="n"' + nfs + '>' + esc(lab) + '</span>' + stateSvg(wd, 56) + '</div>';
+  return '<div class="card p ' + cls + '" data-id="' + id + '"><img src="pics/' + wd + '.webp" alt="" draggable="false"><span class="n"' + nfs + '>' + esc(lab) + '</span></div>';
 }
 function slotItem(id) {
-  var wd = S.lv.cards[id].w;
-  if (S.mode === 'colors') return '<i class="dot" style="background:' + window.COLORS[wd] + '"></i>' + esc(cap(wd));
-  if (S.mode === 'pics') return '<img src="pics/' + wd + '.webp" alt="">' + esc(label(id));
+  var wd = S.lv.cards[id].w, kind = MODES[cmode(id)].kind;
+  if (kind === 'colors') return '<i class="dot" style="background:' + window.COLORS[wd] + '"></i>' + esc(cap(wd));
+  if (kind === 'states') return stateSvg(wd, 24) + esc(label(id));
+  if (kind === 'img') return '<img src="pics/' + wd + '.webp" alt="">' + esc(label(id));
   var t = disp(wd);
   return t.length > 12 ? '<span style="font-size:.88em">' + esc(t) + '</span>' : esc(t);
 }
@@ -517,6 +569,9 @@ function showWin(stars, secs, done) {
     '<button data-act="share">Share result</button></div><div class="row"><button data-act="replay">Play again</button></div>');
 }
 var MICON = {
+  foods: '<span class="mi f"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16a8 8 0 01-16 0z"/><path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3"/></svg></span>',
+  states: '<span class="mi s"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h8l1 2h5v6l-3 2v4h-4l-2-3H7l-2-3z"/></svg></span>',
+  mixed: '<span class="mi x"></span>',
   nums: '<span class="mi n">123</span>',
   decades: '<span class="mi d">70s</span>',
   wordplay: '<span class="mi r">A–Z</span>',
