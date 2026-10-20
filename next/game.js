@@ -385,14 +385,16 @@ function cardEl(id, cls, w) {
   if (kind === 'states') return '<div class="card p s ' + cls + '" data-id="' + id + '"><span class="n"' + nfs + '>' + esc(lab) + '</span>' + stateSvg(wd, 56) + '</div>';
   return '<div class="card p ' + cls + '" data-id="' + id + '"><img src="pics/' + wd + '.webp" alt="" draggable="false"><span class="n"' + nfs + '>' + esc(lab) + '</span></div>';
 }
+// shrink text whose longest word would not fit across a box (about n letters wide)
+function longWordEm(t, n) { var lw = Math.max.apply(null, String(t).split(' ').map(function (x) { return x.length; })); return lw > n ? Math.max(0.6, Math.round(n / lw * 100) / 100) : 1; }
 function slotItem(id) {
   var wd = S.lv.cards[id].w, kind = MODES[cmode(id)].kind;
   if (kind === 'colors') return '<i class="dot" style="background:' + window.COLORS[wd] + '"></i>' + esc(cap(wd));
   if (kind === 'states') return stateSvg(wd, 24) + esc(label(id));
   if (kind === 'img') return '<img src="pics/' + wd + '.webp" alt="">' + esc(label(id));
   if (kind === 'photo') return '<img class="ph" src="pics/' + wd + '.webp" alt="">' + esc(label(id));
-  var t = disp(wd);
-  return t.length > 12 ? '<span style="font-size:.88em">' + esc(t) + '</span>' : esc(t);
+  var t = disp(wd), em = longWordEm(t, 6.2);
+  return em < 1 ? '<span style="font-size:' + em + 'em">' + esc(t) + '</span>' : esc(t);
 }
 
 function coachInfo() {
@@ -449,10 +451,10 @@ function render() {
     var pal = s.cat >= 0 ? PAL[s.cat % PAL.length] : ['#cdbfae', '#cdbfae'];
     var hit = (h && h.slot === i) || (co && co.slot === i);
     html += '<div class="slot' + (s.done ? ' done' : s.ids.length ? ' started' : ' empty') + (hit ? ' hint' : '') + (S.sel && !s.done ? ' target' : '') + (S.bump === i ? ' bump' : '') + '" data-slot="' + i + '" style="--c1:' + pal[0] + ';--c2:' + pal[1] + '">';
-    html += '<div class="sh">' + (s.done ? CHECK + esc(S.lv.cats[s.cat]) : s.ids.length ? (showGroups() ? esc(S.lv.cats[s.cat]) + ' · ' : 'Group ') + s.ids.length + '/' + S.lv.per : 'Empty') + '</div>';
+    html += '<div class="sh">' + (s.done ? CHECK + esc(S.lv.cats[s.cat]) : s.ids.length ? (showGroups() ? '<span class="nm" style="font-size:' + longWordEm(S.lv.cats[s.cat], 7.5) + 'em">' + esc(S.lv.cats[s.cat]) + '</span><i class="cnt">' + s.ids.length + ' of ' + S.lv.per + '</i>' : 'Group ' + s.ids.length + '/' + S.lv.per) : 'Empty') + '</div>';
     s.ids.forEach(function (id, k) {
       var last = k === s.ids.length - 1 && !s.done;
-      html += '<div class="sw' + (last && sid === id ? ' sel' : '') + '"' + (last ? ' data-top="1"' : '') + '>' + slotItem(id) + '</div>';
+      html += '<div class="sw' + (MODES[cmode(id)].kind === 'text' ? ' tx' : '') + (last && sid === id ? ' sel' : '') + '"' + (last ? ' data-top="1"' : '') + '>' + slotItem(id) + '</div>';
     });
     html += '</div>';
   });

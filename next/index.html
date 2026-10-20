@@ -75,7 +75,9 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .clue .cl{width:100%;font-size:calc(11px*var(--fs));font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--soft)}
 .cg{background:var(--card);box-shadow:var(--shadow);border-radius:999px;padding:5px 11px;font-weight:800;font-size:calc(13px*var(--fs));color:var(--ink);line-height:1.2;border:2px solid transparent}
 .cg.cur{border-color:var(--c1)}.cg.on{color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));opacity:.8}
-.slot.started .sh{text-transform:none;letter-spacing:0;font-size:calc(11px*var(--fs)*var(--ks,1));line-height:1.15;padding:0 3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.slot.started .sh{text-transform:none;letter-spacing:0;font-size:calc(11px*var(--fs)*var(--ks,1));line-height:1.12;padding:0 3px}
+.slot.started .sh .nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink);font-weight:900;hyphens:auto;-webkit-hyphens:auto}
+.slot.started .sh .cnt{display:block;font-style:normal;font-size:.9em;font-weight:800;opacity:.75;margin-top:1px}
 .coach a{display:inline-block;margin-left:6px;font-weight:600;font-size:13px;opacity:.7;text-decoration:underline;cursor:pointer}
 
 /* group boxes */
@@ -262,6 +264,7 @@ body.is-dragging *{cursor:grabbing!important}
 .slot{min-height:calc(var(--sh)*var(--ks,1))}
 .slot .sh{font-size:calc(12px*var(--fs)*var(--ks,1))}
 .slot .sw{font-size:calc(14px*var(--fs)*var(--ks,1))}
+.slot .sw.tx{white-space:normal;line-height:1.15;padding:2px 0}
 .slot.done .sh{font-size:calc(15px*var(--fs)*var(--ks,1))}
 .slot.band{min-height:0}
 /* ===== themes ===== */
@@ -376,18 +379,19 @@ textarea.hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 </div>
 <div id="toast"></div>
 <div id="modal"></div>
-<script src="bank.js?v=202610201603"></script>
-<script src="bank_colors.js?v=202610201603"></script>
-<script src="bank_pics.js?v=202610201603"></script>
-<script src="bank_nums.js?v=202610201603"></script>
-<script src="bank_decades.js?v=202610201603"></script>
-<script src="bank_wordplay.js?v=202610201603"></script>
-<script src="bank_bible.js?v=202610201603"></script>
-<script src="bank_foods.js?v=202610201603"></script>
-<script src="bank_states.js?v=202610201603"></script>
-<script src="bank_flowers.js?v=202610201603"></script>
-<script src="bank_birds.js?v=202610201603"></script>
-<script src="bank_places.js?v=202610201603"></script>
-<script src="game.js?v=202610201603"></script>
+<script src="bank.js?v=202610201715"></script>
+<script src="bank_colors.js?v=202610201715"></script>
+<script src="bank_pics.js?v=202610201715"></script>
+<script src="bank_nums.js?v=202610201715"></script>
+<script src="bank_decades.js?v=202610201715"></script>
+<script src="bank_wordplay.js?v=202610201715"></script>
+<script src="bank_bible.js?v=202610201715"></script>
+<script src="bank_foods.js?v=202610201715"></script>
+<script src="bank_states.js?v=202610201715"></script>
+<script src="bank_flowers.js?v=202610201715"></script>
+<script src="bank_birds.js?v=202610201715"></script>
+<script src="bank_places.js?v=202610201715"></script>
+<script src="store-bridge.js?v=202610201715"></script>
+<script src="game.js?v=202610201715"></script>
 </body>
 </html>
