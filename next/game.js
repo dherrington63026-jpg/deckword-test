@@ -1,4 +1,4 @@
-// Deckword test version: group-sorting solitaire with three modes (Words, Colors, Pictures).
+// Alikeberry test version: group-sorting solitaire with many modes.
 // No ads, no real purchases. Everything saves on this phone only.
 (function () {
 'use strict';
@@ -553,7 +553,7 @@ function renderGrid() {
 function shareResult() {
   var sq = ['🟥', '🟩', '🟨', '🟦', '🟪'];
   var line = S.doneOrder.map(function (c) { return sq[c % 5]; }).join('');
-  var txt = 'Deckword · ' + MODES[S.mode].name + (S.daily ? ' · Daily ' + dstr() : ' · Level ' + S.lv.n) + '\n' +
+  var txt = 'Alikeberry · ' + MODES[S.mode].name + (S.daily ? ' · Daily ' + dstr() : ' · Level ' + S.lv.n) + '\n' +
     (P.zen ? '' : '⭐'.repeat(S.stars || 1) + ' · ' + S.misses + ' miss' + (S.misses === 1 ? '' : 'es') + '\n') + line + '\n' + location.origin + location.pathname;
   log('share');
   if (navigator.share) { navigator.share({ text: txt }).catch(function () { }); return; }
@@ -600,7 +600,7 @@ function menu() {
   var st = P.streak, today = dstr(), dm = dailyMode(), cm = S ? S.mode : P.mode;
   var dailyDone = P.daily.date === today;
   var streak = (st.last === today || st.last === dstr(new Date(Date.now() - 864e5))) ? st.count : 0;
-  modal('<h2>Deckword</h2><div class="grid1">' +
+  modal('<h2>Alikeberry</h2><div class="grid1">' +
     '<button class="pri" data-act="resume">Back to the game</button>' +
     '<button class="mt" data-act="modes">' + MICON[cm] + '<span><b>Game mode</b><small>Playing: ' + MODES[cm].name + ' · tap to change</small></span></button>' +
     '<button class="mt" data-act="daily"><span class="mi w" style="background:linear-gradient(145deg,#f6b73c,#ff8a4a)">' + (dailyDone ? '✓' : '★') + '</span><span><b>Daily deck: ' + MODES[dm].name + '</b><small>' + (dailyDone ? 'Done today! ' : 'New puzzle every day · ') + 'Streak ' + streak + ' day' + (streak === 1 ? '' : 's') + '</small></span></button>' +
@@ -638,7 +638,7 @@ function how() {
     '<div class="row"><button class="pri" data-act="resume">Got it</button></div>');
 }
 function welcome() {
-  modal('<h2>Welcome to Deckword</h2><p class="sub" style="font-size:18px">Sort the cards into hidden groups. I will show you how in the first level, one step at a time.</p><div class="row"><button class="pri" data-act="resume">Start</button></div>');
+  modal('<h2>Welcome to Alikeberry</h2><p class="sub" style="font-size:18px">Sort the cards into hidden groups. I will show you how in the first level, one step at a time.</p><div class="row"><button class="pri" data-act="resume">Start</button></div>');
 }
 function settings() {
   modal('<h2>Settings</h2><div class="grid1"><button data-act="fs">Text size: ' + ['Medium', 'Large', 'Extra large'][[1, 1.15, 1.3].indexOf(P.fs)] + '</button>' +
@@ -658,7 +658,7 @@ function stats() {
   var avgM = doneAll.length ? (doneAll.reduce(function (a, e) { return a + e.misses; }, 0) / doneAll.length).toFixed(1) : '0';
   var avgS = doneAll.length ? Math.round(doneAll.reduce(function (a, e) { return a + e.secs; }, 0) / doneAll.length) : 0;
   var perMode = MORDER.map(function (m) { return MODES[m].name + ' ' + doneAll.filter(function (e) { return (e.m || 'words') === m; }).length; }).join(', ');
-  var rep = 'DECKWORD TEST RESULTS\nLevels finished (incl. daily): ' + doneAll.length + '  [' + perMode + ']\nDaily decks finished: ' + doneAll.filter(function (e) { return e.daily; }).length +
+  var rep = 'ALIKEBERRY TEST RESULTS\nLevels finished (incl. daily): ' + doneAll.length + '  [' + perMode + ']\nDaily decks finished: ' + doneAll.filter(function (e) { return e.daily; }).length +
     '\nDays played: ' + Object.keys(days).length + '\nAverage misses per level: ' + avgM + '\nAverage seconds per level: ' + avgS + '\nHints used: ' + cnt('hint') + '\nUndos: ' + cnt('undo') +
     '\nTapped "More hints / watch an ad": ' + cnt('adhint_tap') + '\nTapped "Remove ads $3.99": ' + cnt('removeads_tap') + '\nFun answers: ' + (fun.join(', ') || 'none') +
     '\nHighest level (Words/Colors/Pictures): ' + MORDER.map(function (m) { return Math.max.apply(null, [0].concat(Object.keys(P.sm[m]).map(Number))); }).join(' / ') +
