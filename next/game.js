@@ -332,7 +332,7 @@ function win() {
   var stars = S.misses <= allowed ? 3 : S.misses <= allowed * 2 ? 2 : 1;
   S.stars = stars;
   var sm = P.sm[S.mode], key = String(S.lv.n);
-  if (!S.daily) { sm[key] = Math.max(sm[key] || 0, stars); P.curs[S.mode] = S.lv.n + 1; }
+  if (!S.daily) { sm[key] = Math.max(sm[key] || 0, stars); P.curs[S.mode] = S.lv.n + 1; ADS.sinceAd++; }
   var today = dstr();
   if (S.daily && P.daily.date !== today) {
     P.daily = { date: today, stars: stars, mode: S.mode };
@@ -706,6 +706,37 @@ function buyBtn(id, title, note, pri) {
   return '<button class="buyb' + (pri ? ' pri' : '') + '" data-act="buy" data-v="' + id + '"><b>' + esc(title) + ' · ' + esc(price(id)) + '</b>' + (note ? '<small>' + note + '</small>' : '') + '</button>';
 }
 var RESTLNK = '<button class="lnk" data-act="restore">Restore purchases</button>';
+
+// ---------- ads (David's fair ads standard, 2026-10-21: WebsiteStudio\FAIR-ADS-STANDARD.md) ----------
+// In the app, the ad bridge (Google AdMob) sets window.ABAds = { between(), reward() }, each a Promise; reward() gives true
+// only when the ad was watched to the end. No bridge (the web test, or no ad account yet) = no ads at all.
+var ADS = { launchT: Date.now(), firstToday: false, sinceAd: 0, EVERY: 4, QUIET_MS: 10 * 60e3 };
+(function () { var t = dstr(); ADS.firstToday = P.lastLaunch !== t; P.lastLaunch = t; saveP(); })();
+// a short ad between puzzles only when every rule holds: an ad-supported player, not the first launch of the day,
+// 10+ minutes into this launch, 4+ puzzles finished since the last one, not the Daily deck, and the puzzle just won
+// was not a struggle (1 star = many misses: no ad for a frustrated player)
+function betweenAdOK() {
+  return !!window.ABAds && !hasAdFree() && !ADS.firstToday && Date.now() - ADS.launchT >= ADS.QUIET_MS && ADS.sinceAd >= ADS.EVERY && !S.daily && S.stars > 1;
+}
+function nextLevel() {
+  var go = function () { startLevel(S.lv.n + 1, { mode: S.mode }); };
+  if (!betweenAdOK()) return go();
+  ADS.sinceAd = 0; log('ad_between'); closeModal(); toast('A short ad, then your next puzzle');
+  window.ABAds.between().then(go, go);
+}
+// out of hints: the player chooses to watch an ad (never forced); ad-free players just get them
+function moreHints() {
+  log('adhint_tap');
+  if (hasAdFree() || !window.ABAds) { S.hints += 3; toast('Here are 3 more hints!'); render(); return; }
+  modal('<h2>Out of hints</h2><p class="sub">Watch a short ad to get 3 more hints for this puzzle? Every new level also gives you 3 hints.</p><div class="grid1">' +
+    '<button class="pri" data-act="watchhint">Watch an ad: 3 hints</button><button data-act="resume">No thanks</button><button class="lnk" data-act="remove">Remove ads</button></div>');
+}
+function watchHint() {
+  closeModal(); log('ad_reward_start');
+  var give = function (msg) { S.hints += 3; toast(msg); render(); };
+  window.ABAds.reward().then(function (ok) { if (ok) { log('ad_reward'); give('Here are 3 more hints!'); } else toast('The ad stopped early, so no hints this time.'); },
+    function () { give('No ad was ready, so these 3 hints are on us!'); });
+}
 function lockModes(m, n) {
   log('lock_modes', { n: n });
   SHOP.after = { mode: m, n: n };
@@ -731,7 +762,7 @@ function lockTheme(k, it) {
 }
 function removeAds() {
   log('removeads_tap');
-  modal('<h2>Remove ads</h2><p class="sub">Ads only show between puzzles, never in the middle of one. Remove them for good with one purchase.</p><div class="grid1">' +
+  modal('<h2>Remove ads</h2><p class="sub">Ads never show in the middle of a puzzle. One purchase removes them for good, including the "Watch an ad" offers: extra hints are simply free.</p><div class="grid1">' +
     buyBtn('remove_ads', 'Remove Ads', '', 1) + (hasModes() ? '' : buyBtn('bundle', 'Ad-free + All Modes', 'Also unlocks every level in every mode')) +
     '<button data-act="menu">Not now</button>' + RESTLNK + '</div>');
 }
@@ -1116,7 +1147,8 @@ function act(a, el) {
   var n = el && +el.getAttribute('data-n');
   if (a === 'menu') menu();
   else if (a === 'resume') closeModal();
-  else if (a === 'next') startLevel(S.lv.n + 1, { mode: S.mode });
+  else if (a === 'next') nextLevel();
+  else if (a === 'watchhint') watchHint();
   else if (a === 'replay') restartCur();
   else if (a === 'levels') levels();
   else if (a === 'go') startLevel(n, { mode: S.mode });
@@ -1162,7 +1194,7 @@ function act(a, el) {
 }
 $('bUndo').onclick = function () { if (S && S.style === 'grid') gridShuffle(); else undo(); };
 $('bHint').onclick = function () {
-  if (S && S.hints <= 0) { log('adhint_tap'); S.hints += 3; toast('Here are 3 more hints!'); render(); return; } // Phase 3: optional short video first, unless ad-free
+  if (S && S.hints <= 0) return moreHints();
   giveHint();
 };
 $('bMenu').onclick = function () { unlock(); menu(); };
@@ -1186,7 +1218,7 @@ try {
 if (P.first) { P.first = false; saveP(); welcome(); }
 
 window.DW = {
-  makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel, holidayNow: holidayNow, activeHoliday: activeHoliday, storeSync: storeSync, owns: owns, levelLocked: levelLocked, fxStart: fxStart, FX: FX,
+  makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel, holidayNow: holidayNow, activeHoliday: activeHoliday, storeSync: storeSync, ADS: ADS, betweenAdOK: betweenAdOK, owns: owns, levelLocked: levelLocked, fxStart: fxStart, FX: FX,
   autoplay: function () {
     if (S.style === 'grid') { var gg = 0; while (!S.won && gg++ < 20) { var left = S.lv.cats.map(function (c, i) { return i; }).filter(function (i) { return !isFound(i); }); S.gsel = S.gorder.filter(function (id) { return S.lv.cards[id].cat === left[0]; }); gridSubmit(); } return S.won; }
     var guard = 0;
