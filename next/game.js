@@ -61,12 +61,12 @@ function dstr(d) { d = d || new Date(); return d.getFullYear() + '-' + ('0' + (d
 function disp(w) { w = String(w).replace(/_/g, ' '); return /[A-Z0-9]/.test(w) ? w : cap(w); }
 var LABELS = { icecream: 'Ice cream', bubbletea: 'Bubble tea', misosoup: 'Miso soup', friedrice: 'Fried rice', springrolls: 'Spring rolls', chowmein: 'Chow mein', dimsum: 'Dim sum',
   pekingduck: 'Peking duck', wontonsoup: 'Wonton soup', greeksalad: 'Greek salad', blackforest: 'Black Forest', gulabjamun: 'Gulab jamun', tandoori: 'Tandoori', sunhat: 'Sun hat', witchhat: 'Witch hat',
-  hotdog: 'Hot dog', paperclip: 'Paper clip', springrolls_: '', bookshelf: 'Bookshelf',
+  hotdog: 'Hot dog', christmastree: 'Christmas tree', paperclip: 'Paper clip', springrolls_: '', bookshelf: 'Bookshelf',
   forgetmenot: 'Forget-me-not', birdofparadise: 'Bird of paradise', tigerlily: 'Tiger lily', cherryblossom: 'Cherry blossom', bluejay: 'Blue jay', kiwibird: 'Kiwi',
   eiffel: 'Eiffel Tower', bigben: 'Big Ben', pisa: 'Leaning Tower', towerbridge: 'Tower Bridge', brandenburg: 'Brandenburg Gate', sagrada: 'Sagrada Familia', tajmahal: 'Taj Mahal', greatwall: 'Great Wall',
   fuji: 'Mount Fuji', angkorwat: 'Angkor Wat', forbiddencity: 'Forbidden City', burjkhalifa: 'Burj Khalifa', halong: 'Ha Long Bay', liberty: 'Statue of Liberty', goldengate: 'Golden Gate', rushmore: 'Mount Rushmore',
   niagara: 'Niagara Falls', grandcanyon: 'Grand Canyon', whitehouse: 'White House', empire: 'Empire State', spaceneedle: 'Space Needle', gatewayarch: 'Gateway Arch', brooklyn: 'Brooklyn Bridge', chichen: 'Chichen Itza',
-  cntower: 'CN Tower', christ: 'Christ Redeemer', machu: 'Machu Picchu', iguazu: 'Iguazu Falls', pyramids: 'Pyramids', victoria: 'Victoria Falls', tablemountain: 'Table Mountain', sydneyopera: 'Sydney Opera', butterchicken: 'Butter chicken', newyear: 'New Year', valentine: 'Valentine’s Day', flipflops: 'Flip-flops', harbourbridge: 'Harbour Bridge' };
+  cntower: 'CN Tower', christ: 'Christ Redeemer', machu: 'Machu Picchu', iguazu: 'Iguazu Falls', pyramids: 'Pyramids', victoria: 'Victoria Falls', tablemountain: 'Table Mountain', sydneyopera: 'Sydney Opera', guineafowl: 'Guinea fowl', blackeyedsusan: 'Black-eyed Susan', morningglory: 'Morning glory', californiapoppy: 'California poppy', rialto: 'Rialto Bridge', charlesbridge: 'Charles Bridge', lincolnmemorial: 'Lincoln Memorial', littlemermaid: 'Little Mermaid', angelfalls: 'Angel Falls', galapagos: 'Galápagos', sugarloaf: 'Sugarloaf Mountain', greatbarrierreef: 'Great Barrier Reef', twelveapostles: 'Twelve Apostles', butterchicken: 'Butter chicken', newyear: 'New Year', valentine: 'Valentine’s Day', flipflops: 'Flip-flops', harbourbridge: 'Harbour Bridge' };
 function cmode(id) { return S.lv.cards[id].m || S.mode; }
 function label(id) { var w = S.lv.cards[id].w; return LABELS[w] || disp(w); }
 function stateSvg(w, size) {

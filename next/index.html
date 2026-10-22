@@ -4,6 +4,22 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<script>
+// Tablets (iPad, big Android tablets): show the game scaled up to fill the screen, instead of a narrow phone-width strip.
+// The page is laid out about 500 x 800 and the tablet enlarges it; phones are unchanged.
+(function () {
+  var m = document.querySelector('meta[name=viewport]'), PHONE = m.getAttribute('content');
+  function fit() {
+    var a = screen.width, b = screen.height, s = Math.min(a, b), l = Math.max(a, b);
+    if (s < 700) { m.setAttribute('content', PHONE); return; }
+    var land = window.matchMedia && matchMedia('(orientation: landscape)').matches, W = land ? l : s, H = land ? s : l;
+    var k = Math.min(W / 500, H / 800);
+    m.setAttribute('content', 'width=' + Math.round(W / k) + ', user-scalable=no, viewport-fit=cover');
+  }
+  fit();
+  addEventListener('orientationchange', function () { setTimeout(fit, 60); });
+})();
+</script>
 <meta name="theme-color" content="#f7f0e6">
 <link rel="icon" href="data:,">
 <title>Alikeberry</title>
@@ -380,20 +396,20 @@ textarea.hid{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 </div>
 <div id="toast"></div>
 <div id="modal"></div>
-<script src="bank.js?v=202610220044"></script>
-<script src="bank_colors.js?v=202610220044"></script>
-<script src="bank_pics.js?v=202610220044"></script>
-<script src="bank_nums.js?v=202610220044"></script>
-<script src="bank_decades.js?v=202610220044"></script>
-<script src="bank_wordplay.js?v=202610220044"></script>
-<script src="bank_bible.js?v=202610220044"></script>
-<script src="bank_foods.js?v=202610220044"></script>
-<script src="bank_states.js?v=202610220044"></script>
-<script src="bank_flowers.js?v=202610220044"></script>
-<script src="bank_birds.js?v=202610220044"></script>
-<script src="bank_places.js?v=202610220044"></script>
-<script src="store-bridge.js?v=202610220044"></script>
-<script src="ads-bridge.js?v=202610220044"></script>
-<script src="game.js?v=202610220049"></script>
+<script src="bank.js?v=202610221654"></script>
+<script src="bank_colors.js?v=202610221654"></script>
+<script src="bank_pics.js?v=202610221654"></script>
+<script src="bank_nums.js?v=202610221654"></script>
+<script src="bank_decades.js?v=202610221654"></script>
+<script src="bank_wordplay.js?v=202610221654"></script>
+<script src="bank_bible.js?v=202610221654"></script>
+<script src="bank_foods.js?v=202610221654"></script>
+<script src="bank_states.js?v=202610221654"></script>
+<script src="bank_flowers.js?v=202610221654"></script>
+<script src="bank_birds.js?v=202610221654"></script>
+<script src="bank_places.js?v=202610221654"></script>
+<script src="store-bridge.js?v=202610221654"></script>
+<script src="ads-bridge.js?v=202610221654"></script>
+<script src="game.js?v=202610221654"></script>
 </body>
 </html>

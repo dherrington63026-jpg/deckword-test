@@ -28,5 +28,6 @@ window.PBANK = [
 ["tech","Gadgets","phone laptop camera tv radio watch headphones keyboard printer"],
 ["tools","Tools","hammer wrench pickaxe toolbox bolt gear scissors ruler"],
 ["school","School and office","pencil pen book notebook scissors paperclip backpack ruler clipboard envelope"],
-["hall","Halloween","pumpkin bat spider skull broom candy cauldron witchhat"]
+["hall","Halloween","pumpkin bat spider skull broom candy cauldron witchhat"],
+["xmas","Christmas","ornament stocking christmastree wreath snowman present sleigh nutcracker"]
 ].map(function (r) { return { g: r[0], name: r[1], words: r[2].split(" ") }; });
