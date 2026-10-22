@@ -646,6 +646,7 @@ var FREEMODES = { words: 1, colors: 1, nums: 1 }, FREELEVELS = 20;
 var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 // STORE_LIVE (the phone app from the stores): no free test unlocks, no test hooks, no tester questions
 var STORE_LIVE = NATIVE;
+var SUPPORT_URL = 'https://kelbrasolutions.net/games/alikeberry/support.html', PRIVACY_URL = 'https://kelbrasolutions.net/games/alikeberry/privacy.html';
 var SHOP = { prices: {}, busy: false, after: null };
 function owns(id) { return !!(P.own && P.own[id]); }
 function hasAdFree() { return owns('remove_ads') || owns('bundle'); }
@@ -1033,7 +1034,9 @@ function settings() {
     '<button data-act="zen">Zen mode: ' + (P.zen ? 'On (no stars or miss count)' : 'Off') + '</button>' +
     '<button data-act="restart">Restart this level</button>' +
     '<button data-act="tipson">Show first-level tips again</button>' +
-    '<button data-act="reset">Erase my progress</button><button data-act="menu">Back</button></div>');
+    '<button data-act="reset">Erase my progress</button>' +
+    '<a class="lnkbtn" href="' + SUPPORT_URL + '" target="_blank" rel="noopener">Help &amp; support</a><a class="lnkbtn" href="' + PRIVACY_URL + '" target="_blank" rel="noopener">Privacy policy</a>' +
+    '<button data-act="menu">Back</button></div>');
 }
 function stats() {
   var ev = ST.ev, doneAll = ev.filter(function (e) { return e.e === 'level_done'; });
