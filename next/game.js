@@ -646,7 +646,7 @@ var FREEMODES = { words: 1, colors: 1, nums: 1 }, FREELEVELS = 20;
 var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 // STORE_LIVE (the phone app from the stores): no free test unlocks, no test hooks, no tester questions
 var STORE_LIVE = NATIVE;
-var SUPPORT_URL = 'https://kelbrasolutions.net/games/alikeberry/support.html', PRIVACY_URL = 'https://kelbrasolutions.net/games/alikeberry/privacy.html';
+var SUPPORT_URL = 'https://games.kelbrasolutions.net/alikeberry/support.html', PRIVACY_URL = 'https://games.kelbrasolutions.net/alikeberry/privacy.html';
 var SHOP = { prices: {}, busy: false, after: null };
 function owns(id) { return !!(P.own && P.own[id]); }
 function hasAdFree() { return owns('remove_ads') || owns('bundle'); }
