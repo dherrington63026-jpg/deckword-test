@@ -644,6 +644,8 @@ var PRODUCTS = { remove_ads: ['Remove Ads', '$3.99'], all_modes: ['All Modes', '
   theme_beach: ['Beach Day', '$1.99'], theme_cabin: ['Cozy Cabin', '$1.99'], theme_rainy: ['Rainy Day', '$1.99'], theme_starry: ['Starry Night', '$1.99'], themes_all: ['Every Theme', '$3.99'] };
 var FREEMODES = { words: 1, colors: 1, nums: 1 }, FREELEVELS = 20;
 var NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+// STORE_LIVE (the phone app from the stores): no free test unlocks, no test hooks, no tester questions
+var STORE_LIVE = NATIVE;
 var SHOP = { prices: {}, busy: false, after: null };
 function owns(id) { return !!(P.own && P.own[id]); }
 function hasAdFree() { return owns('remove_ads') || owns('bundle'); }
@@ -1190,7 +1192,7 @@ function act(a, el) {
   else if (a === 'restore') restorePurchases();
   else if (a === 'remove') removeAds();
   else if (a === 'buy') buy(el.getAttribute('data-v'));
-  else if (a === 'testbuy') { var tb = el.getAttribute('data-v'); setOwned([tb]); bought(tb); }
+  else if (a === 'testbuy' && !STORE_LIVE) { var tb = el.getAttribute('data-v'); setOwned([tb]); bought(tb); }
 }
 $('bUndo').onclick = function () { if (S && S.style === 'grid') gridShuffle(); else undo(); };
 $('bHint').onclick = function () {
@@ -1217,7 +1219,7 @@ try {
 } catch (e) { store('dw_cur', null); P.mode = 'words'; startLevel(1); }
 if (P.first) { P.first = false; saveP(); welcome(); }
 
-window.DW = {
+if (!STORE_LIVE) window.DW = {
   makeLevel: makeLevel, cfg: cfg, state: function () { return S; }, MODES: MODES, start: startLevel, holidayNow: holidayNow, activeHoliday: activeHoliday, storeSync: storeSync, ADS: ADS, betweenAdOK: betweenAdOK, owns: owns, levelLocked: levelLocked, fxStart: fxStart, FX: FX,
   autoplay: function () {
     if (S.style === 'grid') { var gg = 0; while (!S.won && gg++ < 20) { var left = S.lv.cats.map(function (c, i) { return i; }).filter(function (i) { return !isFound(i); }); S.gsel = S.gorder.filter(function (id) { return S.lv.cards[id].cat === left[0]; }); gridSubmit(); } return S.won; }
